@@ -3,8 +3,8 @@ name: CodeQL
 on:
   push:
     branches: [ main, dev ]
-  pull_request_target:
-    branches: [ main, dev ]
+  pull_request:
+    branches: [ '**' ]
 
 jobs:
   codeql:
