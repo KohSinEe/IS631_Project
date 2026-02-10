@@ -1,0 +1,38 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: fridgebuddy-db
+    environment:
+      POSTGRES_DB: fridgebuddy
+      POSTGRES_USER: fridgebuddy
+      POSTGRES_PASSWORD: fridgebuddy123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fridgebuddy -d fridgebuddy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # FastAPI Application
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fridgebuddy-api
+    environment:
+      DATABASE_URL: postgresql://fridgebuddy:fridgebuddy123@db:5432/fridgebuddy
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
