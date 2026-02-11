@@ -12,3 +12,16 @@ Quick notes:
 - Input: list of pantry item dicts (each with at least a `name`, optional `quantity` and `unit`).
 - Output: dict matching a `recipes` list of recipe objects (title, time, ingredients, steps, etc.).
 - Dependencies are managed in `requirements.txt`.
+
+Sample request input if testing through swagger ui/terminal:
+```
+{
+  "items": [
+    {"name": "egg", "quantity": 6, "unit": "pcs"},
+    {"name": "rice", "quantity": 2, "unit": "cups"},
+    {"name": "soy sauce", "quantity": 1, "unit": "tbsp"}
+  ],
+  "inventory_only": false,
+  "max_recipes": 2
+}
+```
