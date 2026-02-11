@@ -2,3 +2,10 @@ __pycache__/
 *.py[cod]
 .env
 is631_proj/
+
+
+.DS_Store
+.vscode/
+.idea/
+*.log
+*.sqlite3
