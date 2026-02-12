@@ -1,10 +1,12 @@
 from fastapi import FastAPI
-from app.routers import users
+from app.database import Base, engine
+from app.routers.account import router as accounts_router
 
-app = FastAPI(
-    title="Test App",
-    description="Fridge Inventory Management Extraordinaire",
-    version="0.1.0",
-)
 
-app.include_router(users.router)
+app = FastAPI()
+
+# Create tables
+Base.metadata.create_all(bind=engine)
+
+# Register routers
+app.include_router(accounts_router)
