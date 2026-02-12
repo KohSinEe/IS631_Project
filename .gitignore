@@ -6,3 +6,4 @@ is631_proj/
 .DS_Store
 .vscode/
 .env*
+*.db

@@ -101,7 +101,7 @@ def login(
         value=access_token,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         httponly=True,  # Prevents JavaScript access (XSS protection)
-        secure=True,    # Only send over HTTPS in production
+        secure=settings.COOKIE_SECURE,  # Allow HTTP cookies during local development
         samesite="lax", # CSRF protection
         path="/"
     )
@@ -112,7 +112,7 @@ def login(
         value=refresh_token,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         httponly=True,
-        secure=True,
+        secure=settings.COOKIE_SECURE,
         samesite="lax",
         path="/"
     )
