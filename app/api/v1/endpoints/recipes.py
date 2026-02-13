@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from app.schemas.recipes import RecipeGenerateRequest, RecipeGenerateResponse
 from app.services.recipe_gen import generate_recipes
 
-router = APIRouter(prefix="/recipes", tags=["recipes"])
+router = APIRouter()
 
 @router.post("/generate", response_model=RecipeGenerateResponse)
 async def generate(req: RecipeGenerateRequest):

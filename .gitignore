@@ -30,4 +30,4 @@ postgres_data/
 
 # Mac / Windows junk
 .DS_Store
-Thumbs.db
+*.db
