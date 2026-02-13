@@ -1,8 +1,33 @@
+# Python
 __pycache__/
-# *.py[cod]
-.env
-is631_proj/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
 
-.DS_Store
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment variables
+.env
+
+# Local config (if you use config.py pattern)
+config.py
+
+# Database / Postgres
+postgres_data/
+
+# Docker
+*.log
+
+# VSCode
 .vscode/
-.env*
+
+# Mac / Windows junk
+.DS_Store
+Thumbs.db
