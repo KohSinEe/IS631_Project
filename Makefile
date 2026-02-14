@@ -52,6 +52,9 @@ format:
 	@uv run black app/
 	@uv run isort app/
 
+st:
+	@uv run streamlit run frontend/app.py
+
 clean:
 	@echo "Cleaning up..."
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
