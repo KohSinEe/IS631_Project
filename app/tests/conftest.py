@@ -11,8 +11,9 @@ from app.models import User, Household
 from app.core.security import get_password_hash
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def client() -> TestClient:
+    """Function-scoped so each test gets a fresh client (no leftover cookies from auth_client)."""
     return TestClient(app)
 
 
