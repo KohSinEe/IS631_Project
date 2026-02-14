@@ -1,4 +1,5 @@
 import pytest
+import os
 from typing import Generator
 from fastapi.testclient import TestClient
 from app.main import app
@@ -15,13 +16,13 @@ def client() -> TestClient:
     return TestClient(app)
 
 
-TEST_DATABASE_URL = "sqlite:///./test.db"
-engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
 @pytest.fixture(name="db")
-def session_fixture() -> Generator[Session, None, None]:
+def session_fixture(tmp_path) -> Generator[Session, None, None]:
+    db_file = tmp_path / "test.db"
+    TEST_DATABASE_URL = f"sqlite:///{db_file}"
+    engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
     Base.metadata.create_all(bind=engine)
 
     connection = engine.connect()
@@ -34,8 +35,10 @@ def session_fixture() -> Generator[Session, None, None]:
     session.close()
     transaction.rollback()
     connection.close()
-
     Base.metadata.drop_all(bind=engine)
+
+    if os.path.exists(TEST_DATABASE_URL):
+        os.remove(TEST_DATABASE_URL)
 
 
 @pytest.fixture(autouse=True)
