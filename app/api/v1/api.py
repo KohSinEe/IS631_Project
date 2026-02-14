@@ -2,8 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, items, barcode
-from app.api.v1.endpoints import auth, users, items, recipes
+from app.api.v1.endpoints import auth, users, items, barcode, recipes
 
 # Create main API router
 api_router = APIRouter()
