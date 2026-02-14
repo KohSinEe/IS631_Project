@@ -52,6 +52,9 @@ format:
 	@uv run black app/
 	@uv run isort app/
 
+test:
+	@uv run pytest --cov=app/api --cov-report=term
+
 clean:
 	@echo "Cleaning up..."
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
@@ -59,3 +62,4 @@ clean:
 	@find . -type f -name "*.pyo" -delete 2>/dev/null || true
 	@rm -rf .pytest_cache dist build *.egg-info uv.lock
 	@echo "✅ Cleanup complete"
+
