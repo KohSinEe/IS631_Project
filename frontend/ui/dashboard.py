@@ -14,6 +14,7 @@ from services.client import APIError
 from services.inventory import create_inventory_item
 from ui.actions import handle_quick_actions
 from ui.barcode import handle_barcode_scan
+from ui.recipe import handle_generate_recipe
 
 
 @st.dialog("Profile")
@@ -239,13 +240,19 @@ def render_dashboard() -> None:
 
     add_item_col, edit_item_col = st.columns([1, 1])
 
-    filter_options = ["All"] + CATEGORY_OPTIONS
+    if "category_filter" not in st.session_state:
+        st.session_state.category_filter = "All"
 
+    filter_options = ["All"] + CATEGORY_OPTIONS
     _ = st.selectbox("Filter by category", filter_options, key="category_filter")
     _ = st.toggle("Sort by expiry date", key="sort_by_expiry")
 
-    filtered = filter_inventory(st.session_state.inventory, st.session_state.category_filter)
-    sorted_items = render_inventory_table(filtered, st.session_state.sort_by_expiry)
+    st.session_state.filtered_inventory = filter_inventory(
+        st.session_state.inventory, st.session_state.category_filter
+    )
+    sorted_items = render_inventory_table(
+        st.session_state.filtered_inventory, st.session_state.sort_by_expiry
+    )
 
     with add_item_col:
         if st.button("Add Item", use_container_width=True):
@@ -257,5 +264,8 @@ def render_dashboard() -> None:
             st.session_state.show_edit_item_dialog = True
             if st.session_state.show_edit_item_dialog:
                 edit_item_dialog(sorted_items)
+
+    if st.button("✨ Generate Recipe ✨", use_container_width=True):
+        st.session_state.page = "recipe"
 
     ensure_inventory_loaded()
