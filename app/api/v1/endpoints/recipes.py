@@ -6,7 +6,7 @@ from app.services.recipe_gen import generate_recipes
 router = APIRouter()
 
 
-@router.post("/generate", response_model=RecipeGenerateResponse)
+@router.post("", response_model=RecipeGenerateResponse)
 async def generate(req: RecipeGenerateRequest):
     result = await generate_recipes(
         pantry_items=[i.model_dump() for i in req.items],

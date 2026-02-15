@@ -10,7 +10,7 @@ def generate_recipe(items, max_recipes, inventory_only, preferences):
     }
 
     try:
-        recipes = api_request("post", "/recipes/generate", json=data)
+        recipes = api_request("post", "/recipes", json=data)
         return recipes
     except APIError:
         raise
