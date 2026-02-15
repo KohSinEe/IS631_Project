@@ -239,19 +239,12 @@ def render_dashboard() -> None:
 
     add_item_col, edit_item_col = st.columns([1, 1])
 
-    filtered = filter_inventory(st.session_state.inventory, st.session_state.category_filter)
     filter_options = ["All"] + CATEGORY_OPTIONS
-    default_index = (
-        filter_options.index(st.session_state.category_filter)
-        if st.session_state.category_filter in filter_options
-        else 0
-    )
 
-    selected_category = st.selectbox("Filter by category", filter_options, index=default_index)
-    st.session_state.category_filter = selected_category
-    sort_toggle = st.toggle("Sort by expiry date", value=st.session_state.sort_by_expiry)
-    st.session_state.sort_by_expiry = sort_toggle
+    _ = st.selectbox("Filter by category", filter_options, key="category_filter")
+    _ = st.toggle("Sort by expiry date", key="sort_by_expiry")
 
+    filtered = filter_inventory(st.session_state.inventory, st.session_state.category_filter)
     sorted_items = render_inventory_table(filtered, st.session_state.sort_by_expiry)
 
     with add_item_col:
