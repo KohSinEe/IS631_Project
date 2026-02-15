@@ -250,7 +250,7 @@ def render_dashboard() -> None:
     st.session_state.filtered_inventory = filter_inventory(
         st.session_state.inventory, st.session_state.category_filter
     )
-    sorted_items = render_inventory_table(
+    st.session_state.filtered_inventory = render_inventory_table(
         st.session_state.filtered_inventory, st.session_state.sort_by_expiry
     )
 
@@ -263,7 +263,7 @@ def render_dashboard() -> None:
         if st.button("Edit Items", use_container_width=True):
             st.session_state.show_edit_item_dialog = True
             if st.session_state.show_edit_item_dialog:
-                edit_item_dialog(sorted_items)
+                edit_item_dialog(st.session_state.filtered_inventory)
 
     if st.button("✨ Generate Recipe ✨", use_container_width=True):
         st.session_state.page = "recipe"
