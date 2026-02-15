@@ -45,7 +45,9 @@ def _build_prompt(
     max_recipes: int,
     preferences: Optional[Dict[str, Any]] = None,
 ) -> str:
-    prefs_text = f"\nUser preferences (optional): {json.dumps(preferences)}\n" if preferences else ""
+    prefs_text = (
+        f"\nUser preferences (optional): {json.dumps(preferences)}\n" if preferences else ""
+    )
 
     rules = [
         "- Return ONLY valid JSON. No markdown. No backticks. No commentary.",
@@ -54,10 +56,14 @@ def _build_prompt(
         "- Use pantry items as much as possible.",
     ]
     if inventory_only:
-        rules.append("- Do NOT include any missing ingredients. missing_ingredients must be an empty list.")
+        rules.append(
+            "- Do NOT include any missing ingredients. missing_ingredients must be an empty list."
+        )
         rules.append("- If a recipe would require missing ingredients, do not output it.")
     else:
-        rules.append("- If an ingredient is not available in pantry items, list it in missing_ingredients.")
+        rules.append(
+            "- If an ingredient is not available in pantry items, list it in missing_ingredients."
+        )
 
     schema = {
         "recipes": [
@@ -67,7 +73,7 @@ def _build_prompt(
                 "ingredients": ["string", "..."],
                 "missing_ingredients": ["string", "..."],
                 "steps": ["string", "..."],
-                "reason": "string (optional)"
+                "reason": "string (optional)",
             }
         ]
     }
@@ -79,9 +85,7 @@ def _build_prompt(
         f"{prefs_text}\n"
         "JSON schema (example shape):\n"
         f"{json.dumps(schema, indent=2)}\n\n"
-        "Rules:\n"
-        + "\n".join(rules)
-        + "\n\nReturn JSON only."
+        "Rules:\n" + "\n".join(rules) + "\n\nReturn JSON only."
     )
 
 
@@ -120,7 +124,7 @@ class OllamaClient:
 async def generate_recipes(
     pantry_items: List[Dict[str, Any]],
     *,
-    model: str = "mistral-large-3",
+    model: str = "mistral-large-3:675b-cloud",
     ollama_host: Optional[str] = None,
     inventory_only: bool = True,
     max_recipes: int = 3,
@@ -133,6 +137,7 @@ async def generate_recipes(
 
     if ollama_host is None:
         ollama_host = os.getenv("OLLAMA_HOST", "http://ollama:11434")
+    print("OLLAMA_HOST:", ollama_host)
     api_key = os.getenv("OLLAMA_API_KEY")
 
     prompt = _build_prompt(
@@ -181,6 +186,7 @@ async def _smoke_test(model: str, ollama_host: str) -> None:
 
 def main():
     from dotenv import load_dotenv
+
     load_dotenv()
 
     parser = argparse.ArgumentParser()
@@ -191,6 +197,7 @@ def main():
 
     if args.smoke_test:
         import asyncio
+
         try:
             asyncio.run(_smoke_test(args.model, args.ollama_host))
         except ValidationError as ve:
