@@ -44,6 +44,6 @@ def handle_generate_recipe():
         st.info("Your fridge is empty. Add some items first!")
         st.stop()
 
-    with st.spinner("Generating recipes… 🍳 This may take a few seconds."):
+    with st.spinner("Generating recipes…"):
         recipe = generate_recipe(inventory, 1, True, {})
     display_recipes(recipe)
