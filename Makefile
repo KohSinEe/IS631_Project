@@ -52,6 +52,9 @@ format:
 	@uv run black app/
 	@uv run isort app/
 
+st:
+	@uv run streamlit run frontend/app.py
+  
 test:
 	@uv run pytest --cov=app/api --cov-report=term
 

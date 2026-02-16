@@ -13,9 +13,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 
+from dotenv import load_dotenv
+
 from app.config import settings
 from app.api.v1.api import api_router
 from app.database import Base, engine
+
+load_dotenv()
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
