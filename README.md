@@ -28,3 +28,32 @@ Sample request input if testing through swagger ui/terminal:
 # 🥗 Food Management App
 
 A smart household food management system that helps reduce waste, track inventory, and find recipes based on available ingredients.
+
+## Testing
+
+Unit tests run on every push and pull request via GitHub Actions.
+
+| Where to see results | How |
+|----------------------|-----|
+| **GitHub Actions** | Repo → **Actions** tab → select the **Unit Tests** workflow run. Green ✓ = passed; red ✗ = failed. |
+| **Pull requests** | Open a PR → checks appear at the bottom (e.g. "Unit Tests — Success" or "Failure"). |
+| **README badge** | Add a status badge so visitors see pass/fail at a glance (see below). |
+| **Coverage report** | After a run, open the run → **Artifacts** → download **coverage-html** → unzip and open `index.html` in a browser. |
+
+### Status badge (optional)
+
+Add this to your README (replace `YOUR_USERNAME` and `YOUR_REPO` with your GitHub org/repo):
+
+```markdown
+[![Unit Tests](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/unit_tests.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/unit_tests.yml)
+```
+
+### Run tests locally
+
+```bash
+make test
+# or
+uv run pytest --cov=app --cov-report=term -v
+```
+
+For a one-page summary of what’s covered: `uv run pytest --cov=app --cov-report=term-missing`.
