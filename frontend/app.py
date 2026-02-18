@@ -3,6 +3,7 @@ import requests
 from inference_sdk import InferenceHTTPClient
 import tempfile
 
+
 # --- Roboflow Setup ---
 ROBOFLOW_API_KEY = "Km2rdbKvwzJU0h2EOL7p"
 WORKSPACE_NAME = "fridge-buddy"
