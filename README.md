@@ -15,7 +15,7 @@ uvicorn main:app --reload
 
 Run the frontend (Streamlit):
 cd frontend
-streamlit run app.py
+python streamlit run app.py
 Open http://localhost:8501
  in a browser.
 
