@@ -1,30 +1,27 @@
-# recipe generator
+Image Scanner Setup
 
-`recipe generator` is a small module for generating recipe suggestions from a list of pantry items. It accepts pantry item data and returns JSON-compatible recipe output following a simple recipe schema. currently a stand-alone module and not integrated with the rest of the app.
+The image scanner detects food items from uploaded photos and feeds them into your inventory. It uses Roboflow AI for object detection.
 
-Purpose:
-- Provide an async `generate_recipes` entrypoint that consumes pantry items and produces validated recipe data for use in a larger pantry/meal-planning app.
+Prerequisites:
+Roboflow API Key – you need a valid key from your Roboflow project.
+Python packages: inference_sdk, streamlit, requests (already in your requirements.txt).
+Backend running (FastAPI) to save detected items.
 
-Status:
-- Work-in-progress. Module is intended to be imported and used from an async context (e.g., FastAPI route).
+Steps to Run
+Make sure your backend is running:
+cd backend
+uvicorn main:app --reload
 
-Quick notes:
-- Input: list of pantry item dicts (each with at least a `name`, optional `quantity` and `unit`).
-- Output: dict matching a `recipes` list of recipe objects (title, time, ingredients, steps, etc.).
-- Dependencies are managed in `requirements.txt`.
 
-Sample request input if testing through swagger ui/terminal:
-```
-{
-  "items": [
-    {"name": "egg", "quantity": 6, "unit": "pcs"},
-    {"name": "rice", "quantity": 2, "unit": "cups"},
-    {"name": "soy sauce", "quantity": 1, "unit": "tbsp"}
-  ],
-  "inventory_only": false,
-  "max_recipes": 2
-}
-```
-# 🥗 Food Management App
+Run the frontend (Streamlit):
+cd frontend
+streamlit run app.py
+Open http://localhost:8501
+ in a browser.
 
-A smart household food management system that helps reduce waste, track inventory, and find recipes based on available ingredients.
+How to Use
+Choose Image Scan in the Streamlit app.
+Upload a photo of your food item(s).
+The AI will detect items and display the detected class.
+You can adjust the item name, quantity, storage type, and expiry before saving.
+Click Add/Update Item to store it in the inventory.
