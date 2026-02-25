@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+.coverage
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment variables
+.env
+
+# Local config (if you use config.py pattern)
+config.py
+
+# Database / Postgres
+postgres_data/
+
+# Docker
+*.log
+
+# VSCode
+.vscode/
+
+# Mac / Windows junk
+.DS_Store
+*.db
