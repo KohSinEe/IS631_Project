@@ -9,7 +9,7 @@ from utils.inventory import (
     ensure_inventory_loaded,
     filter_inventory,
 )
-from services.user import logout_user, update_user
+from services.user import logout_user, update_user, delete_household
 from services.client import APIError
 from services.inventory import create_inventory_item
 from ui.actions import handle_quick_actions
@@ -62,12 +62,36 @@ def logout_dialog() -> None:
             st.rerun()
 
 
+@st.dialog("Delete fridge")
+def delete_fridge_dialog(household_id: int) -> None:
+    st.warning(
+        "This will permanently delete your fridge and all its contents. "
+        "All members will be removed from the fridge. This cannot be undone."
+    )
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Cancel", type="secondary", use_container_width=True):
+            st.session_state.show_delete_fridge_dialog = False
+            st.rerun()
+    with col2:
+        if st.button("Delete my fridge", type="primary", use_container_width=True):
+            try:
+                delete_household(household_id)
+                st.session_state.show_delete_fridge_dialog = False
+                st.success("Fridge deleted.")
+                st.rerun()
+            except APIError as e:
+                st.error(e.message)
+
+
 def render_header() -> None:
     user = st.session_state.user or {}
     if "show_profile_dialog" not in st.session_state:
         st.session_state.show_profile_dialog = False
     if "show_logout_dialog" not in st.session_state:
         st.session_state.show_logout_dialog = False
+    if "show_delete_fridge_dialog" not in st.session_state:
+        st.session_state.show_delete_fridge_dialog = False
 
     header_left, header_right = st.columns([10, 1])
 
@@ -88,6 +112,12 @@ def render_header() -> None:
                 st.session_state.show_profile_dialog = True
                 if st.session_state.show_profile_dialog:
                     profile_dialog()
+            if (
+                user.get("household_id")
+                and user.get("is_household_owner")
+                and st.button("Delete fridge", use_container_width=True)
+            ):
+                st.session_state.show_delete_fridge_dialog = True
             if st.button("Sign out", type="secondary", use_container_width=True):
                 st.session_state.show_logout_dialog = True
                 if st.session_state.show_logout_dialog:
@@ -223,6 +253,10 @@ def render_dashboard() -> None:
         st.session_state.show_edit_item_dialog = False
 
     render_header()
+
+    # Show delete-fridge confirmation dialog when triggered (e.g. from Account popover)
+    if st.session_state.get("show_delete_fridge_dialog") and st.session_state.get("household_id"):
+        delete_fridge_dialog(st.session_state.household_id)
     action_cols = st.columns([1, 1, 1])
     render_metric("Items tracked", len(st.session_state.inventory), action_cols[0], "green")
     summary = summarize_inventory(st.session_state.inventory)

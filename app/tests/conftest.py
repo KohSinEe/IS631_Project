@@ -66,6 +66,8 @@ def create_test_user(db: Session) -> User:
         household_id=household.id,
     )
     db.add(user)
+    db.flush()
+    household.owner_id = user.id
     db.commit()
     db.refresh(user)
 

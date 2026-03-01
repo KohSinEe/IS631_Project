@@ -67,8 +67,9 @@ class UserResponse(UserBase):
     id: int
     household_id: Optional[int] = None
     is_active: bool
+    is_household_owner: bool = False
     created_at: datetime
-    
+
     model_config = {"from_attributes": True}
 
 

@@ -60,3 +60,14 @@ def update_user(name: str) -> None:
     except APIError as e:
         st.error(f"Failed to update profile: {e}")
         raise
+
+
+def delete_household(household_id: int) -> None:
+    """Delete the current user's fridge (household) and all its contents. Owner only."""
+    api_request("delete", f"/households/{household_id}")
+    st.session_state.household_id = None
+    st.session_state.inventory = []
+    st.session_state.inventory_dirty = True
+    if st.session_state.user and isinstance(st.session_state.user, dict):
+        st.session_state.user["household_id"] = None
+        st.session_state.user["is_household_owner"] = False
