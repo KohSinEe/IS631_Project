@@ -26,15 +26,18 @@ def sign_up_dialog() -> None:
     with st.form("signup_form"):
         reg_email = st.text_input("Email", key="register_email")
         reg_password = st.text_input("Password", type="password", key="register_password")
+        reg_password_confirm = st.text_input("Confirm Password", type="password", key="register_password_confirm")
         reg_name = st.text_input("Display name", key="register_name")
         reg_household = st.text_input("Household name (optional)", key="register_household")
         submitted = st.form_submit_button("Create account")
     if submitted:
-        if not reg_email or not reg_password:
-            st.error("Email and password are required")
+        if not reg_email or not reg_password or not reg_password_confirm:
+            st.error("Email, password, and confirmation are required")
+        elif reg_password != reg_password_confirm:
+            st.error("Passwords do not match")
         else:
             try:
-                register_user(reg_email, reg_password, reg_name, reg_household)
+                register_user(reg_email, reg_password, reg_password_confirm, reg_name, reg_household)
                 st.success("Account created. Please sign in.")
             except APIError as err:
                 st.error(err.message)

@@ -45,7 +45,7 @@ def register(user_in: UserCreate, db: DatabaseDep):
         db.flush()  # Get the ID without committing
         household_id = household.id
     
-    # Create user
+    # Create user (use only password, password_confirm is validated by schema)
     user = User(
         email=user_in.email,
         name=user_in.name,

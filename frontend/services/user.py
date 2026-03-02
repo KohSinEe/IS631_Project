@@ -5,11 +5,12 @@ from state.session import reset_session
 
 
 def register_user(
-    email: str, password: str, name: Optional[str], household_name: Optional[str]
+    email: str, password: str, password_confirm: str, name: Optional[str], household_name: Optional[str]
 ) -> Dict[str, Any]:
     payload = {
         "email": email,
         "password": password,
+        "password_confirm": password_confirm,
         "name": name or None,
         "household_name": household_name or None,
     }
