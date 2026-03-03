@@ -47,7 +47,7 @@ class UserCreate(UserBase):
     @field_validator('password_confirm')
     @classmethod
     def passwords_match(cls, v: str, values) -> str:
-        password = values.get('password')
+        password = values.data.get('password')
         if password and v != password:
             raise ValueError('Passwords do not match')
         return v
@@ -94,3 +94,8 @@ class UserResponse(UserBase):
 class UserInDB(UserResponse):
     """User schema with hashed password (internal use only)."""
     hashed_password: str
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+    new_password: str

@@ -20,6 +20,27 @@ def sign_in_dialog() -> None:
             except APIError as err:
                 st.error(err.message)
 
+def reset_password_form() -> None:
+    st.markdown("<h3 style='text-align: center;'>Reset Password</h3>", unsafe_allow_html=True)
+    with st.form("reset_pw_form"):
+        email = st.text_input("Email", key="reset_email")
+        new_password = st.text_input("New Password", type="password", key="reset_new_password")
+        confirm_password = st.text_input("Confirm New Password", type="password", key="reset_confirm_password")
+        submitted = st.form_submit_button("Reset Password")
+    if submitted:
+        if not email or not new_password or not confirm_password:
+            st.error("All fields are required")
+        elif new_password != confirm_password:
+            st.error("Passwords do not match")
+        else:
+            try:
+                from services.user import reset_password
+                reset_password(email, new_password)
+                st.success("Password reset successful. Please sign in.")
+                st.session_state.show_pw_reset = False
+            except APIError as err:
+                st.error(err.message)
+
 
 @st.dialog("Sign Up")
 def sign_up_dialog() -> None:
@@ -59,13 +80,24 @@ def render_public_view() -> None:
 
     col1, col2, col3 = st.columns([2, 3, 2])
     with col2:
+        # Only allow one dialog or form at a time
         if st.button("Sign In", key="landing_signin", use_container_width=True):
             st.session_state.show_sign_in_form = True
-            if st.session_state.show_sign_in_form:
-                sign_in_dialog()
-            else:
-                st.session_state.sign_in_form_data = {"email": "", "password": ""}
+            st.session_state.show_sign_up_form = False
+            st.session_state.show_pw_reset = False
         if st.button("Sign Up", key="landing_signup", use_container_width=True):
             st.session_state.show_sign_up_form = True
-            if st.session_state.show_sign_up_form:
-                sign_up_dialog()
+            st.session_state.show_sign_in_form = False
+            st.session_state.show_pw_reset = False
+        if st.button("Forgot Password?", key="landing_forgotpw", use_container_width=True):
+            st.session_state.show_pw_reset = True
+            st.session_state.show_sign_in_form = False
+            st.session_state.show_sign_up_form = False
+
+        # Only show one dialog or form at a time
+        if st.session_state.get("show_sign_in_form"):
+            sign_in_dialog()
+        elif st.session_state.get("show_sign_up_form"):
+            sign_up_dialog()
+        elif st.session_state.get("show_pw_reset"):
+            reset_password_form()

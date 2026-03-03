@@ -1,9 +1,10 @@
+
 """User management endpoints."""
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Body, Depends
 
 from app.dependencies import DatabaseDep, CurrentUserDep
-from app.schemas.user import UserResponse, UserUpdate, PasswordChange
+from app.schemas.user import UserResponse, UserUpdate, PasswordChange, PasswordResetRequest
 from app.core.security import verify_password, get_password_hash
 from app.models.user import User
 
@@ -90,5 +91,32 @@ def delete_current_user(
     db.commit()
     
     return None
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+def reset_password(request: PasswordResetRequest, db: DatabaseDep = DatabaseDep):
+    """
+    Reset a user's password (forgotten password).
+    - **email**: User's email address
+    - **new_password**: New password to set
+    """
+    import re
+    password = request.new_password
+    if len(password) < 8 or len(password) > 12:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must be 8-12 characters long")
+    if not re.search(r'[A-Z]', password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must contain at least one uppercase letter")
+    if not re.search(r'[a-z]', password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must contain at least one lowercase letter")
+    if not re.search(r'[0-9]', password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must contain at least one number")
+    if not re.search(r'[^A-Za-z0-9]', password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must contain at least one special character")
+
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    user.hashed_password = get_password_hash(request.new_password)
+    db.commit()
+    return {"message": "Password reset successful"}
 
 
