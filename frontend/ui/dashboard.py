@@ -9,9 +9,16 @@ from utils.inventory import (
     ensure_inventory_loaded,
     filter_inventory,
 )
-from services.user import logout_user, update_user, delete_household
+from services.user import logout_user, update_user, delete_household, get_current_user
 from services.client import APIError
 from services.inventory import create_inventory_item
+from services.invitations import (
+    fetch_my_invitations,
+    fetch_household_members,
+    create_invite,
+    accept_invitation,
+    decline_invitation,
+)
 from ui.actions import handle_quick_actions
 from ui.barcode import handle_barcode_scan
 from ui.recipe import handle_generate_recipe
@@ -62,6 +69,31 @@ def logout_dialog() -> None:
             st.rerun()
 
 
+@st.dialog("Invite to fridge")
+def invite_user_dialog(household_id: int) -> None:
+    st.caption("Invite someone by email. They must already have an account.")
+    with st.form("invite_user_form"):
+        email = st.text_input("Email", placeholder="friend@example.com", key="invite_email")
+        role = st.selectbox(
+            "Role",
+            options=["co_owner", "child"],
+            format_func=lambda x: "Co-owner" if x == "co_owner" else "Child",
+            key="invite_role",
+        )
+        submitted = st.form_submit_button("Send invite")
+    if submitted:
+        if not email or "@" not in email:
+            st.error("Please enter a valid email.")
+        else:
+            try:
+                create_invite(household_id, email, role)
+                st.success("Invitation sent.")
+                st.session_state.show_invite_dialog = False
+                st.rerun()
+            except APIError as e:
+                st.error(e.message)
+
+
 @st.dialog("Delete fridge")
 def delete_fridge_dialog(household_id: int) -> None:
     st.warning(
@@ -92,6 +124,8 @@ def render_header() -> None:
         st.session_state.show_logout_dialog = False
     if "show_delete_fridge_dialog" not in st.session_state:
         st.session_state.show_delete_fridge_dialog = False
+    if "show_invite_dialog" not in st.session_state:
+        st.session_state.show_invite_dialog = False
 
     header_left, header_right = st.columns([10, 1])
 
@@ -112,6 +146,12 @@ def render_header() -> None:
                 st.session_state.show_profile_dialog = True
                 if st.session_state.show_profile_dialog:
                     profile_dialog()
+            if (
+                user.get("household_id")
+                and user.get("is_household_owner")
+                and st.button("Invite to fridge", use_container_width=True)
+            ):
+                st.session_state.show_invite_dialog = True
             if (
                 user.get("household_id")
                 and user.get("is_household_owner")
@@ -254,9 +294,44 @@ def render_dashboard() -> None:
 
     render_header()
 
+    # Show invite dialog when triggered from Account popover
+    if st.session_state.get("show_invite_dialog") and st.session_state.get("household_id"):
+        invite_user_dialog(st.session_state.household_id)
     # Show delete-fridge confirmation dialog when triggered (e.g. from Account popover)
     if st.session_state.get("show_delete_fridge_dialog") and st.session_state.get("household_id"):
         delete_fridge_dialog(st.session_state.household_id)
+
+    # Pending invitations (for users not in a household, or at top for everyone)
+    try:
+        pending = fetch_my_invitations()
+    except APIError:
+        pending = []
+    if pending:
+        st.markdown("### Pending invitations")
+        for inv in pending:
+            role_label = "Co-owner" if inv.get("role") == "co_owner" else "Child"
+            inviter = inv.get("inviter_name") or "Someone"
+            st.write(f"**{inv.get('household_name', 'Fridge')}** — {inviter} invited you as **{role_label}**.")
+            col1, col2, _ = st.columns([1, 1, 4])
+            with col1:
+                if st.button("Accept", key=f"accept_inv_{inv['id']}"):
+                    try:
+                        accept_invitation(inv["id"])
+                        get_current_user()
+                        st.session_state.inventory_dirty = True
+                        st.success("You joined the fridge!")
+                        st.rerun()
+                    except APIError as e:
+                        st.error(e.message)
+            with col2:
+                if st.button("Decline", key=f"decline_inv_{inv['id']}", type="secondary"):
+                    try:
+                        decline_invitation(inv["id"])
+                        st.rerun()
+                    except APIError as e:
+                        st.error(e.message)
+        st.divider()
+
     action_cols = st.columns([1, 1, 1])
     render_metric("Items tracked", len(st.session_state.inventory), action_cols[0], "green")
     summary = summarize_inventory(st.session_state.inventory)
@@ -265,12 +340,26 @@ def render_dashboard() -> None:
 
     household_id = st.session_state.household_id
     if not household_id:
-        st.info(
-            "You do not belong to a household yet. Ask an admin to assign you before managing items."
-        )
+        if not pending:
+            st.info(
+                "You do not belong to a fridge yet. Get invited by an owner, or create an account with a household name."
+            )
+        ensure_inventory_loaded()
         return
 
-    st.divider()
+    # Fridge members and their roles
+    try:
+        members = fetch_household_members(household_id)
+    except APIError:
+        members = []
+    if members:
+        role_label = {"owner": "Owner", "co_owner": "Co-owner", "child": "Child"}
+        st.markdown("### Fridge members")
+        for m in members:
+            name = m.get("name") or m.get("email") or "—"
+            role = role_label.get(m.get("role"), m.get("role", ""))
+            st.caption(f"**{name}** — {role}")
+        st.divider()
 
     add_item_col, edit_item_col = st.columns([1, 1])
 

@@ -2,7 +2,7 @@
 
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, field_serializer
 
 
 class UserBase(BaseModel):
@@ -68,9 +68,17 @@ class UserResponse(UserBase):
     household_id: Optional[int] = None
     is_active: bool
     is_household_owner: bool = False
+    household_role: Optional[str] = None  # "co_owner" | "child" | None (owner)
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+    @field_serializer("household_role")
+    @classmethod
+    def serialize_household_role(cls, v):
+        if v is None:
+            return None
+        return getattr(v, "value", v)
 
 
 class UserInDB(UserResponse):
