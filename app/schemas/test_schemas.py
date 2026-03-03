@@ -22,9 +22,9 @@ from app.schemas.recipes import PantryItem, Recipe, RecipeGenerateRequest, Recip
 
 def test_user_create_valid() -> None:
     """UserCreate accepts valid email, password, optional name and household."""
-    u = UserCreate(email="user@example.com", password="password123", name="Test", household_name="Home")
+    u = UserCreate(email="user@example.com", password="password_123", name="Test", household_name="Home")
     assert u.email == "user@example.com"
-    assert u.password == "password123"
+    assert u.password == "password_123"
     assert u.name == "Test"
     assert u.household_name == "Home"
 
@@ -58,9 +58,9 @@ def test_user_update_partial() -> None:
 
 def test_password_change_valid() -> None:
     """PasswordChange accepts current and new password (8+ chars)."""
-    p = PasswordChange(current_password="oldpass123", new_password="newpass456")
-    assert p.current_password == "oldpass123"
-    assert p.new_password == "newpass456"
+    p = PasswordChange(current_password="oldpass_123", new_password="newpass_456")
+    assert p.current_password == "oldpass_123"
+    assert p.new_password == "newpass_456"
 
 
 def test_password_change_new_too_short() -> None:
