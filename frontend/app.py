@@ -1,4 +1,14 @@
 import streamlit as st
+import os
+from dotenv import load_dotenv
+
+# load environment variables from project root.
+# prefer a real .env file, but fall back to the example if that's all the user has
+root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+env_path = os.path.join(root, ".env")
+if not os.path.exists(env_path):
+    env_path = os.path.join(root, ".env.example")
+load_dotenv(env_path)
 
 from styles.theme import CUSTOM_STYLE
 from state.session import init_session_state
