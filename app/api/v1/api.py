@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, users, items, barcode, recipes, user_allergen
+from app.api.v1.endpoints import auth, users, items, barcode, recipes, user_allergen, household_allergens
 
 # Create main API router
 api_router = APIRouter()
@@ -14,3 +14,4 @@ api_router.include_router(items.router, prefix="/items", tags=["Items"])
 api_router.include_router(barcode.router, prefix="/barcode", tags=["Barcode Scanning"])
 api_router.include_router(recipes.router, prefix="/recipes", tags=["Recipes"])
 api_router.include_router(user_allergen.router, prefix="/users", tags=["User Allergens"]) #prefix is users to match the endpoint path for allergens
+api_router.include_router(household_allergens.router, prefix="/households", tags=["Household Allergens"])
