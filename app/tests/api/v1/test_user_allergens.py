@@ -3,6 +3,8 @@ from app.config import settings
 
 VALID = ['PEANUTS', 'SHELLFISH', 'MILK']
 
+
+# Users allergen tests 
 def test_get_allergens_auth(client: TestClient) -> None:
     r = client.get(f"{settings.API_V1_STR}/users/me/allergens")
     assert r.status_code == 401
