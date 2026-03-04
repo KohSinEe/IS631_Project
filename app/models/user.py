@@ -42,5 +42,8 @@ class User(Base):
             and self.household.owner_id == self.id
         )
 
+    household = relationship("Household", back_populates="users")
+    allergens = relationship("UserAllergen", back_populates="user", cascade="all, delete-orphan")
+    
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', name='{self.name}')>"
