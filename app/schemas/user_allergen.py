@@ -14,6 +14,7 @@ class UserAllergenBase(BaseModel):
     def validate_allergens(cls, v):
         if not isinstance(v, list):
             raise ValueError("Allergens must be a list of strings")
+        v = [a.upper() for a in v]
         invalid = [a for a in v if a not in VALID_ALLERGENS]
         if invalid:
             raise ValueError(f"Invalid allergens: {invalid}. Valid options are: {sorted(VALID_ALLERGENS)}")
