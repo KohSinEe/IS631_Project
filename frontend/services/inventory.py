@@ -23,6 +23,11 @@ def adjust_inventory_quantity(item_id: int, change: int) -> Dict[str, Any]:
     return api_request("patch", f"/items/{item_id}/quantity", params=params, json=payload)
 
 
+def update_inventory_item(item_id: int, item_data: Dict[str, Any]) -> Dict[str, Any]:
+    params = {"household_id": st.session_state.household_id}
+    return api_request("put", f"/items/{item_id}", params=params, json=item_data)
+
+
 def delete_inventory_item(item_id: int) -> None:
     params = {"household_id": st.session_state.household_id}
     api_request("delete", f"/items/{item_id}", params=params)

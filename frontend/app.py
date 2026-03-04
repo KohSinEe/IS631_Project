@@ -5,6 +5,8 @@ from state.session import init_session_state
 from ui.public import render_public_view
 from ui.dashboard import render_dashboard, ensure_inventory_loaded
 from ui.recipe import handle_generate_recipe
+from ui.stocktake import render_stocktake
+from ui.usage import render_usage_overview
 
 
 def main() -> None:
@@ -22,6 +24,11 @@ def main() -> None:
             render_dashboard()
         elif st.session_state.page == "recipe":
             handle_generate_recipe()
+        elif st.session_state.page == "stocktake":
+            ensure_inventory_loaded()
+            render_stocktake()
+        elif st.session_state.page == "usage":
+            render_usage_overview()
     else:
         render_public_view()
 

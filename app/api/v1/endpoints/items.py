@@ -7,6 +7,7 @@ from datetime import date
 
 from app.database import get_db
 from app.models import Item
+from app.models.usage_log import ItemUsageLog
 from app.schemas.item import ItemCreate, ItemUpdate, ItemResponse, ItemQuantityChange, Category
 from app.core.security import get_current_user
 
@@ -242,7 +243,18 @@ def adjust_item_quantity(
     
     db_item.quantity = new_quantity
     db.add(db_item)
+
+    if quantity_change.change < 0:
+        log = ItemUsageLog(
+            item_id=db_item.id,
+            item_name=db_item.name,
+            unit=db_item.unit.value,
+            household_id=db_item.household_id,
+            quantity_consumed=abs(quantity_change.change),
+        )
+        db.add(log)
+
     db.commit()
     db.refresh(db_item)
-    
+
     return db_item
