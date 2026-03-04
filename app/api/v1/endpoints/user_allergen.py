@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.dependencies import DatabaseDep, CurrentUserDep
-from app.schemas.user_allergen import UserAllergenCreate, UserAllergenUpdate, UserAllergenResponse
+from app.schemas.user_allergen import UserAllergenUpdate, UserAllergenResponse
 from app.models.user_allergen import UserAllergen
 
 router = APIRouter()
