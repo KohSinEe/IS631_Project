@@ -11,10 +11,21 @@ def fetch_household_members(household_id: int) -> List[dict]:
     return out if isinstance(out, list) else []
 
 
-def fetch_my_invitations() -> List[dict]:
-    """List pending invitations for the current user."""
-    out = api_request("get", "/invitations/me")
+def fetch_household_invites(household_id: int) -> List[dict]:
+    """List invitations sent for this fridge (owner only). Includes status: pending, accepted, declined."""
+    out = api_request("get", f"/households/{household_id}/invites")
     return out if isinstance(out, list) else []
+
+
+def fetch_my_invitations() -> List[dict]:
+    """List pending invitations for the current user (by email, case-insensitive on backend)."""
+    try:
+        out = api_request("get", "/invitations/me")
+    except Exception:
+        return []
+    if not isinstance(out, list):
+        return []
+    return [x for x in out if isinstance(x, dict)]
 
 
 def create_invite(household_id: int, email: str, role: str) -> dict:

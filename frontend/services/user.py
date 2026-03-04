@@ -33,11 +33,15 @@ def login_user(email: str, password: str) -> None:
 def logout_user() -> None:
     try:
         api_request("post", "/auth/logout")
-    except APIError:
+    except Exception:
+        # Always clear local state even if server request fails (e.g. network, 401)
         pass
 
-    client = get_api_client()
-    client.cookies.clear()
+    try:
+        client = get_api_client()
+        client.cookies.clear()
+    except Exception:
+        pass
     reset_session()
 
 

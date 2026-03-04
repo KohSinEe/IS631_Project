@@ -15,6 +15,7 @@ from services.inventory import create_inventory_item
 from services.invitations import (
     fetch_my_invitations,
     fetch_household_members,
+    fetch_household_invites,
     create_invite,
     accept_invitation,
     decline_invitation,
@@ -60,7 +61,10 @@ def logout_dialog() -> None:
 
     with col1:
         if st.button("Yes", use_container_width=True):
-            logout_user()
+            try:
+                logout_user()
+            except Exception:
+                pass  # Local state is cleared in logout_user; ensure we still close and rerun
             st.session_state.show_logout_dialog = False
             st.rerun()
     with col2:
@@ -71,6 +75,16 @@ def logout_dialog() -> None:
 
 @st.dialog("Invite to fridge")
 def invite_user_dialog(household_id: int) -> None:
+    # Show success + OK when we just sent an invite (so user can acknowledge)
+    if st.session_state.get("invite_sent_to"):
+        email = st.session_state.invite_sent_to
+        st.success(f"Invitation sent to **{email}**. They can accept or decline from their dashboard.")
+        if st.button("OK", type="primary", use_container_width=True):
+            st.session_state.invite_sent_to = None
+            st.session_state.show_invite_dialog = False
+            st.rerun()
+        return
+
     st.caption("Invite someone by email. They must already have an account.")
     with st.form("invite_user_form"):
         email = st.text_input("Email", placeholder="friend@example.com", key="invite_email")
@@ -86,12 +100,28 @@ def invite_user_dialog(household_id: int) -> None:
             st.error("Please enter a valid email.")
         else:
             try:
-                create_invite(household_id, email, role)
-                st.success("Invitation sent.")
-                st.session_state.show_invite_dialog = False
+                create_invite(household_id, email.strip(), role)
+                st.session_state.invite_sent_to = email.strip()
                 st.rerun()
             except APIError as e:
-                st.error(e.message)
+                st.error(getattr(e, "message", str(e)))
+
+
+@st.dialog("You have a fridge invitation")
+def invitation_notification_dialog(invites: list) -> None:
+    """Pop-up to notify the user they have pending invitation(s)."""
+    invites = [i for i in (invites or []) if isinstance(i, dict)]
+    if not invites:
+        return
+    inv = invites[0]
+    role_label = "Co-owner" if inv.get("role") == "co_owner" else "Child"
+    fridge_name = inv.get("household_name") or "a fridge"
+    st.info(f"You've been invited to join **{fridge_name}** as **{role_label}**.")
+    if len(invites) > 1:
+        st.caption(f"You have {len(invites)} pending invitation(s).")
+    if st.button("OK", type="primary", use_container_width=True):
+        st.session_state.invitation_popup_dismissed = True
+        st.rerun()
 
 
 @st.dialog("Delete fridge")
@@ -113,7 +143,7 @@ def delete_fridge_dialog(household_id: int) -> None:
                 st.success("Fridge deleted.")
                 st.rerun()
             except APIError as e:
-                st.error(e.message)
+                st.error(getattr(e, "message", str(e)))
 
 
 def render_header() -> None:
@@ -303,33 +333,44 @@ def render_dashboard() -> None:
 
     # Pending invitations (for users not in a household, or at top for everyone)
     try:
-        pending = fetch_my_invitations()
-    except APIError:
+        raw = fetch_my_invitations()
+        pending = [x for x in (raw or []) if isinstance(x, dict)]
+    except Exception:
         pending = []
+    if not pending:
+        st.session_state.invitation_popup_dismissed = False  # Reset so next invite shows popup
     if pending:
+        # Pop-up notification for invitee (show once until they click OK)
+        if "invitation_popup_dismissed" not in st.session_state:
+            st.session_state.invitation_popup_dismissed = False
+        if not st.session_state.invitation_popup_dismissed:
+            invitation_notification_dialog(pending)
         st.markdown("### Pending invitations")
         for inv in pending:
             role_label = "Co-owner" if inv.get("role") == "co_owner" else "Child"
             inviter = inv.get("inviter_name") or "Someone"
+            inv_id = inv.get("id")
+            if inv_id is None:
+                continue
             st.write(f"**{inv.get('household_name', 'Fridge')}** — {inviter} invited you as **{role_label}**.")
             col1, col2, _ = st.columns([1, 1, 4])
             with col1:
-                if st.button("Accept", key=f"accept_inv_{inv['id']}"):
+                if st.button("Accept", key=f"accept_inv_{inv_id}"):
                     try:
-                        accept_invitation(inv["id"])
+                        accept_invitation(inv_id)
                         get_current_user()
                         st.session_state.inventory_dirty = True
                         st.success("You joined the fridge!")
                         st.rerun()
                     except APIError as e:
-                        st.error(e.message)
+                        st.error(getattr(e, "message", str(e)))
             with col2:
-                if st.button("Decline", key=f"decline_inv_{inv['id']}", type="secondary"):
+                if st.button("Decline", key=f"decline_inv_{inv_id}", type="secondary"):
                     try:
-                        decline_invitation(inv["id"])
+                        decline_invitation(inv_id)
                         st.rerun()
                     except APIError as e:
-                        st.error(e.message)
+                        st.error(getattr(e, "message", str(e)))
         st.divider()
 
     action_cols = st.columns([1, 1, 1])
@@ -360,6 +401,25 @@ def render_dashboard() -> None:
             role = role_label.get(m.get("role"), m.get("role", ""))
             st.caption(f"**{name}** — {role}")
         st.divider()
+
+    # Owner: invitation status (accepted / declined / pending) so they see when someone responds
+    user = st.session_state.user or {}
+    if user.get("is_household_owner"):
+        try:
+            sent_invites = fetch_household_invites(household_id)
+        except APIError:
+            sent_invites = []
+        if sent_invites:
+            status_label = {"pending": "Pending", "accepted": "Accepted", "declined": "Declined"}
+            role_label_inv = {"co_owner": "Co-owner", "child": "Child"}
+            with st.expander("Invitation status (shared fridge)"):
+                st.caption("You’ll see here when someone accepts or declines your invite.")
+                for inv in sent_invites:
+                    email = inv.get("invitee_email", "")
+                    role = role_label_inv.get(inv.get("role"), inv.get("role", ""))
+                    status = status_label.get(inv.get("status"), inv.get("status", ""))
+                    st.caption(f"**{email}** — {role} — *{status}*")
+            st.divider()
 
     add_item_col, edit_item_col = st.columns([1, 1])
 
