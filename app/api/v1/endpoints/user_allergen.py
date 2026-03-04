@@ -1,0 +1,44 @@
+"""User allergen endpoints."""
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from app.dependencies import DatabaseDep, CurrentUserDep
+from app.schemas.user_allergen import UserAllergenCreate, UserAllergenUpdate, UserAllergenResponse
+from app.models.user_allergen import UserAllergen
+
+router = APIRouter()
+
+@router.get("/me/allergens", response_model=UserAllergenResponse, status_code=status.HTTP_200_OK)
+def get_allergens(current_user: CurrentUserDep, db: DatabaseDep):
+    """Get allergens for the current user."""
+    allergens = (
+        db.query(UserAllergen)
+        .filter(UserAllergen.user_id == current_user.id)
+        .all()
+    )
+    return UserAllergenResponse(
+        user_id=current_user.id,
+        allergens=[a.allergen for a in allergens],
+    )
+
+
+@router.put("/me/allergens", response_model=UserAllergenResponse, status_code=status.HTTP_200_OK)
+# Does a new replacement. Deletes all existing allergens for the user and adds the new list.
+def put_allergens(
+    payload: UserAllergenUpdate,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+):
+    """Replace the current user's allergens (full replace, not merge)."""
+    db.query(UserAllergen).filter(UserAllergen.user_id == current_user.id).delete()
+
+    new_allergens = [
+        UserAllergen(user_id=current_user.id, allergen=a)
+        for a in payload.allergens
+    ]
+    db.add_all(new_allergens)
+    db.commit()
+
+    return UserAllergenResponse(
+        user_id=current_user.id,
+        allergens=payload.allergens,
+    )
