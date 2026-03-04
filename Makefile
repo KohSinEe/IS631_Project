@@ -3,13 +3,15 @@
 help:
 	@echo "Food Management App - Available Commands"
 	@echo "=========================================="
-	@echo "  make install     - Install dependencies with UV"
-	@echo "  make setup       - Complete initial setup"
-	@echo "  make run         - Run development server"
-	@echo "  make migrate     - Run database migrations"
-	@echo "  make create-user - Create first user"
-	@echo "  make format      - Format code"
-	@echo "  make clean       - Clean build artifacts"
+	@echo "  make install       - Install dependencies with UV"
+	@echo "  make setup         - Complete initial setup"
+	@echo "  make run           - Run FastAPI server"
+	@echo "  make run-streamlit - Run Streamlit UI"
+	@echo "  make run-all       - Run FastAPI and Streamlit together"
+	@echo "  make migrate       - Run database migrations"
+	@echo "  make create-user   - Create first user"
+	@echo "  make format        - Format code"
+	@echo "  make clean         - Clean build artifacts"
 
 install:
 	@echo "Installing dependencies..."
@@ -35,8 +37,17 @@ setup: install
 	@echo "  2. Run: make create-user"
 	@echo "  3. Run: make run"
 
+
 run:
 	@uv run uvicorn app.main:app --reload --port 8000
+
+run-streamlit:
+	streamlit run frontend/app.py
+
+run-all:
+	@echo "Starting FastAPI and Streamlit..."
+	(uv run uvicorn app.main:app --reload --port 8000 &)
+	streamlit run frontend/app.py
 
 migrate:
 	@uv run alembic upgrade head

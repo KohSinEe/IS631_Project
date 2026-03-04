@@ -22,9 +22,9 @@ from app.schemas.recipes import PantryItem, Recipe, RecipeGenerateRequest, Recip
 
 def test_user_create_valid() -> None:
     """UserCreate accepts valid email, password, optional name and household."""
-    u = UserCreate(email="user@example.com", password="password123", name="Test", household_name="Home")
+    u = UserCreate(email="user@example.com", password="Password_123", name="Test", household_name="Home")
     assert u.email == "user@example.com"
-    assert u.password == "password123"
+    assert u.password == "Password_123"
     assert u.name == "Test"
     assert u.household_name == "Home"
 
@@ -45,7 +45,7 @@ def test_user_create_password_too_long() -> None:
 def test_user_create_invalid_email() -> None:
     """UserCreate rejects invalid email format."""
     with pytest.raises(ValidationError):
-        UserCreate(email="not-an-email", password="validpass123")
+        UserCreate(email="not-an-email", password="valid_pass123")
 
 
 def test_user_update_partial() -> None:
@@ -58,15 +58,15 @@ def test_user_update_partial() -> None:
 
 def test_password_change_valid() -> None:
     """PasswordChange accepts current and new password (8+ chars)."""
-    p = PasswordChange(current_password="oldpass123", new_password="newpass456")
-    assert p.current_password == "oldpass123"
-    assert p.new_password == "newpass456"
+    p = PasswordChange(current_password="Oldpass_123", new_password="Newpass_456")
+    assert p.current_password == "Oldpass_123"
+    assert p.new_password == "Newpass_456"
 
 
 def test_password_change_new_too_short() -> None:
     """PasswordChange rejects new_password under 8 characters."""
     with pytest.raises(ValidationError):
-        PasswordChange(current_password="oldpass123", new_password="short")
+        PasswordChange(current_password="Oldpass_123", new_password="short")
 
 
 # ----- Auth schemas -----

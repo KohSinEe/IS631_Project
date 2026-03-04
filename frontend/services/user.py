@@ -1,3 +1,4 @@
+
 from typing import Optional, Any, Dict
 import streamlit as st
 from services.client import APIError, api_request, get_api_client
@@ -5,11 +6,12 @@ from state.session import reset_session
 
 
 def register_user(
-    email: str, password: str, name: Optional[str], household_name: Optional[str]
+    email: str, password: str, password_confirm: str, name: Optional[str], household_name: Optional[str]
 ) -> Dict[str, Any]:
     payload = {
         "email": email,
         "password": password,
+        "password_confirm": password_confirm,
         "name": name or None,
         "household_name": household_name or None,
     }
@@ -59,4 +61,21 @@ def update_user(name: str) -> None:
 
     except APIError as e:
         st.error(f"Failed to update profile: {e}")
+        raise
+
+
+def reset_password(email: str, new_password: str) -> None:
+    payload = {"email": email, "new_password": new_password}
+    try:
+        response = api_request("post", "/users/reset-password", json=payload)
+        print(f"Password reset response: {response}")
+        if not response or (isinstance(response, dict) and response.get("message") != "Password reset successful"):
+            st.error("Password reset failed. Please check your email and try again.")
+        else:
+            st.success("Password reset successful. Please sign in.")
+    except APIError as e:
+        st.error(f"Failed to reset password: {e}")
+        print(f"APIError: {e}")
+    except APIError as e:
+        st.error(f"Failed to reset password: {e}")
         raise
