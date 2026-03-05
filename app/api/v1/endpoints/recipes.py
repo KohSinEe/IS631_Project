@@ -22,8 +22,6 @@ async def generate(req: RecipeGenerateRequest, current_user: CurrentUserDep, db:
 
     # Recipe generation, including allergens
 
-    print("Allergens being passed:", allergens)
-
     try:
         result = await generate_recipes(
             pantry_items=[i.model_dump() for i in req.items],
