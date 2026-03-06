@@ -448,7 +448,15 @@ def render_dashboard() -> None:
             if st.session_state.show_edit_item_dialog:
                 edit_item_dialog(st.session_state.filtered_inventory)
 
-    if st.button("✨ Generate Recipe ✨", use_container_width=True):
-        st.session_state.page = "recipe"
+    nav_col1, nav_col2, nav_col3 = st.columns(3)
+    with nav_col1:
+        if st.button("✨ Generate Recipe ✨", use_container_width=True):
+            st.session_state.page = "recipe"
+    with nav_col2:
+        if st.button("Stocktake", use_container_width=True):
+            st.session_state.page = "stocktake"
+    with nav_col3:
+        if st.button("Usage Overview", use_container_width=True):
+            st.session_state.page = "usage"
 
     ensure_inventory_loaded()
