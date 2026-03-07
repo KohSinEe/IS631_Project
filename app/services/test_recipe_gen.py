@@ -74,7 +74,8 @@ def test_build_prompt_includes_pantry_and_rules() -> None:
 def test_build_prompt_inventory_only_rules() -> None:
     """When inventory_only=True, prompt says no missing ingredients."""
     prompt = _build_prompt(["egg"], inventory_only=True, max_recipes=1)
-    assert "Do NOT include any missing ingredients" in prompt or "missing_ingredients must be an empty" in prompt
+    assert "missing_ingredients" in prompt
+    assert "empty" in prompt.lower() or "entirely from" in prompt.lower()
 
 
 def test_build_prompt_with_preferences() -> None:

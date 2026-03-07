@@ -62,7 +62,7 @@ def create_first_user():
             db.flush()
             household_id = household.id
             print(f"✅ Created household: {household_name}")
-        
+
         # Create user
         user = User(
             email=email,
@@ -72,6 +72,11 @@ def create_first_user():
             is_active=True
         )
         db.add(user)
+        db.flush()
+        if household_id:
+            household = db.query(Household).filter(Household.id == household_id).first()
+            if household:
+                household.owner_id = user.id
         db.commit()
         
         print("=" * 50)

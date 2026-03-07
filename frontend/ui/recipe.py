@@ -38,6 +38,9 @@ def handle_generate_recipe():
         st.session_state.category_filter = "All"
         st.session_state.page = "dashboard"
         st.rerun()
+    
+    inventory_only = st.session_state.get("inventory_only", True)
+    use_household_allergens = st.session_state.get("use_household_allergens", False)
 
     inventory = fetch_inventory()
     if not inventory:
@@ -45,5 +48,15 @@ def handle_generate_recipe():
         st.stop()
 
     with st.spinner("Generating recipes…"):
-        recipe = generate_recipe(inventory, 1, True, {})
-    display_recipes(recipe)
+        try:
+            recipe = generate_recipe(
+                                        inventory,
+                                        max_recipes=3,
+                                        inventory_only=inventory_only,
+                                        preferences={},
+                                        use_household_allergens=use_household_allergens,
+                                    )
+            display_recipes(recipe)
+        
+        except Exception as e:
+            st.error(f"Failed to generate recipes: {e}")

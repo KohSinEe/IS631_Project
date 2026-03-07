@@ -19,6 +19,7 @@ class RecipeGenerateRequest(BaseModel):
     inventory_only: bool = True
     max_recipes: int = 3
     preferences: Optional[Dict[str, Any]] = None
+    use_household_allergens: bool = True  # False = only my own allergens
 
 class RecipeGenerateResponse(BaseModel):
     recipes: List[Recipe]

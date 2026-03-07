@@ -14,7 +14,8 @@ def test_register_success(client: TestClient, db) -> None:
         f"{settings.API_V1_STR}/auth/register",
         json={
             "email": "newuser@example.com",
-            "password": "securepass123",
+            "password": "Secure_12",
+            "password_confirm": "Secure_12",
             "name": "New User",
         },
     )
@@ -33,7 +34,8 @@ def test_register_with_household(client: TestClient, db) -> None:
         f"{settings.API_V1_STR}/auth/register",
         json={
             "email": "household@example.com",
-            "password": "password123",
+            "password": "Password_1",
+            "password_confirm": "Password_1",
             "household_name": "My Household",
         },
     )
@@ -48,7 +50,8 @@ def test_register_duplicate_email(client: TestClient, create_test_user: User) ->
         f"{settings.API_V1_STR}/auth/register",
         json={
             "email": "test@example.com",
-            "password": "anotherpass123",
+            "password": "Another_1",
+            "password_confirm": "Another_1",
             "name": "Duplicate",
         },
     )

@@ -13,7 +13,7 @@ def parse_expiry(raw_value: str) -> date:
 
 
 def ensure_inventory_loaded() -> None:
-    if not st.session_state.is_authenticated or not st.session_state.household_id:
+    if not st.session_state.get("is_authenticated") or not st.session_state.get("household_id"):
         st.session_state.inventory = []
         st.session_state.inventory_dirty = False
         return

@@ -21,8 +21,14 @@ from app.schemas.recipes import PantryItem, Recipe, RecipeGenerateRequest, Recip
 
 
 def test_user_create_valid() -> None:
-    """UserCreate accepts valid email, password, optional name and household."""
-    u = UserCreate(email="user@example.com", password="Password_123", name="Test", household_name="Home")
+    """UserCreate accepts valid email, password, password_confirm, optional name and household."""
+    u = UserCreate(
+        email="user@example.com",
+        password="Password_123",
+        password_confirm="Password_123",
+        name="Test",
+        household_name="Home",
+    )
     assert u.email == "user@example.com"
     assert u.password == "Password_123"
     assert u.name == "Test"
