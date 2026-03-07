@@ -550,6 +550,31 @@ def render_dashboard() -> None:
             if st.session_state.show_edit_item_dialog:
                 edit_item_dialog(st.session_state.filtered_inventory)
 
+    st.divider()
+
+    st.markdown("### Help Me Generate A Recipe")
+
+    inventory_only = not st.toggle(
+        "Consider ingredients outside my fridge",
+        value=False,
+        key="inventory_only_toggle",
+        help="When on, the AI may suggest recipes that need extra ingredients not in your fridge."
+    )
+    st.session_state.inventory_only = inventory_only
+
+    user = st.session_state.user or {}
+    if user.get("household_id"):
+        cooking_for = st.radio(
+            "Who are you cooking for?",
+            options=["myself", "household"],
+            format_func=lambda x: "Myself" if x == "myself" else "My Household",
+            horizontal=True,
+            key="cooking_for_radio",
+        )
+        st.session_state.use_household_allergens = cooking_for == "household"
+    else:
+        st.session_state.use_household_allergens = False
+
     if st.button("✨ Generate Recipe ✨", use_container_width=True):
         st.session_state.page = "recipe"
 
