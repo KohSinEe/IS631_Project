@@ -426,6 +426,14 @@ def render_dashboard() -> None:
 
     render_header()
 
+    nav_col1, nav_col2 = st.columns(2)
+    with nav_col1:
+        if st.button("Stocktake", use_container_width=True):
+            st.session_state.page = "stocktake"
+    with nav_col2:
+        if st.button("Usage Overview", use_container_width=True):
+            st.session_state.page = "usage"
+
     # Show invite dialog when triggered from Account popover
     if st.session_state.get("show_invite_dialog") and st.session_state.get("household_id"):
         invite_user_dialog(st.session_state.household_id)
@@ -550,6 +558,7 @@ def render_dashboard() -> None:
             if st.session_state.show_edit_item_dialog:
                 edit_item_dialog(st.session_state.filtered_inventory)
 
+
     st.divider()
 
     st.markdown("### Help Me Generate A Recipe")
@@ -575,15 +584,7 @@ def render_dashboard() -> None:
     else:
         st.session_state.use_household_allergens = False
 
-nav_col1, nav_col2, nav_col3 = st.columns(3)
-with nav_col1:
     if st.button("✨ Generate Recipe ✨", use_container_width=True):
-        st.session_state.page = "recipe"
-with nav_col2:
-    if st.button("Stocktake", use_container_width=True):
-        st.session_state.page = "stocktake"
-with nav_col3:
-    if st.button("Usage Overview", use_container_width=True):
-        st.session_state.page = "usage"
+            st.session_state.page = "recipe"
 
     ensure_inventory_loaded()
