@@ -22,15 +22,12 @@ def test_get_household_allergens_empty(auth_client: TestClient, create_test_user
     assert all(m["allergens"] == [] for m in data)
 
 def test_get_household_allergens_with_data(auth_client: TestClient, create_test_user) -> None:
-    """Returns correct allergens for each household member."""
-    auth_client.put(
+    auth_client.post( 
         f"{settings.API_V1_STR}/users/me/allergens",
         json={"allergens": VALID}
     )
-
     r = auth_client.get(f"{settings.API_V1_STR}/households/allergens")
     assert r.status_code == 200
-
     data = r.json()
     member = next(m for m in data if m["user_id"] == create_test_user.id)
     assert set(member["allergens"]) == set(VALID)
