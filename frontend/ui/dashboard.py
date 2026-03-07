@@ -2,7 +2,7 @@ import streamlit as st
 from typing import Any, Dict, List
 from datetime import date, timedelta
 
-from config.settings import EXPIRY_ALERT_DAYS, CATEGORY_OPTIONS, UNIT_OPTIONS
+from config.settings import EXPIRY_ALERT_DAYS, CATEGORY_OPTIONS, UNIT_OPTIONS, CATEGORY_DEFAULT_EXPIRY_DAYS
 from utils.inventory import (
     parse_expiry,
     summarize_inventory,
@@ -94,9 +94,7 @@ def render_header() -> None:
                     logout_dialog()
 
 
-def render_metric(
-    label: str, value: Any, column: st.delta_generator.DeltaGenerator, color: str
-) -> None:
+def render_metric(label: str, value: Any, column: st.delta_generator.DeltaGenerator, color: str) -> None:
     color_class = {
         "blue": "",
         "green": "metric-green",
@@ -127,16 +125,10 @@ def render_expiry_alerts(summary: Dict[str, Any]) -> None:
         st.write(f"• {item['name']} — {item['quantity']} {item['unit']} by {expiry}")
 
 
-def render_inventory_table(
-    items: List[Dict[str, Any]], sort_by_expiry: bool
-) -> List[Dict[str, Any]]:
+def render_inventory_table(items: List[Dict[str, Any]], sort_by_expiry: bool) -> List[Dict[str, Any]]:
     working = items.copy()
     if sort_by_expiry:
-        working.sort(
-            key=lambda entry: (
-                parse_expiry(entry["expiry_date"]) if entry.get("expiry_date") else date.max
-            )
-        )
+        working.sort(key=lambda entry: (parse_expiry(entry["expiry_date"]) if entry.get("expiry_date") else date.max))
 
     rows: List[Dict[str, Any]] = []
     soon_cutoff = date.today() + timedelta(days=EXPIRY_ALERT_DAYS)
@@ -165,26 +157,37 @@ def render_inventory_table(
         return working
 
     st.markdown("### Inventory overview")
-    st.dataframe(rows, use_container_width=True, hide_index=True)
+    st.dataframe(rows, width="stretch", hide_index=True)
     return working
 
 
 def handle_add_item() -> None:
+    # Category lives outside the form so changes trigger a rerun and update the help text.
+    category = st.selectbox("Category", options=CATEGORY_OPTIONS, key="create_category")
+
+    days = CATEGORY_DEFAULT_EXPIRY_DAYS.get(category, 30)
+
     with st.form("add_item_form"):
         st.subheader("Add to pantry")
         name = st.text_input("Item", key="create_name")
         quantity = st.number_input("Quantity", min_value=0, step=1, value=1, key="create_quantity")
         unit = st.selectbox("Unit", options=UNIT_OPTIONS, key="create_unit")
         expiry = st.date_input(
-            "Expiry Date", min_value=date.today(), format="DD/MM/YYYY", key="create_expiry"
+            "Expiry Date",
+            value=None,
+            min_value=date.today(),
+            format="DD/MM/YYYY",
+            key="create_expiry",
+            help=f"Leave blank to auto-estimate for {category} ({days} days).",
         )
-        category = st.selectbox("Category", options=CATEGORY_OPTIONS, key="create_category")
         submitted = st.form_submit_button("Save item")
 
     if submitted:
         if not name:
             st.error("Item name is required")
             return
+        if expiry is None:
+            expiry = date.today() + timedelta(days=days)
         data = {
             "name": name,
             "quantity": int(quantity),
@@ -231,9 +234,7 @@ def render_dashboard() -> None:
 
     household_id = st.session_state.household_id
     if not household_id:
-        st.info(
-            "You do not belong to a household yet. Ask an admin to assign you before managing items."
-        )
+        st.info("You do not belong to a household yet. Ask an admin to assign you before managing items.")
         return
 
     st.divider()
@@ -247,12 +248,8 @@ def render_dashboard() -> None:
     _ = st.selectbox("Filter by category", filter_options, key="category_filter")
     _ = st.toggle("Sort by expiry date", key="sort_by_expiry")
 
-    st.session_state.filtered_inventory = filter_inventory(
-        st.session_state.inventory, st.session_state.category_filter
-    )
-    st.session_state.filtered_inventory = render_inventory_table(
-        st.session_state.filtered_inventory, st.session_state.sort_by_expiry
-    )
+    st.session_state.filtered_inventory = filter_inventory(st.session_state.inventory, st.session_state.category_filter)
+    st.session_state.filtered_inventory = render_inventory_table(st.session_state.filtered_inventory, st.session_state.sort_by_expiry)
 
     with add_item_col:
         if st.button("Add Item", use_container_width=True):
