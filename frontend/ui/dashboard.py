@@ -2,7 +2,7 @@ import streamlit as st
 from typing import Any, Dict, List
 from datetime import date, timedelta
 
-from config.settings import EXPIRY_ALERT_DAYS, CATEGORY_OPTIONS, UNIT_OPTIONS
+from config.settings import EXPIRY_ALERT_DAYS, CATEGORY_OPTIONS, UNIT_OPTIONS, ALLERGEN_OPTIONS
 from utils.inventory import (
     parse_expiry,
     summarize_inventory,
@@ -22,7 +22,7 @@ from services.invitations import (
 )
 
 from services.user import get_my_allergens, add_allergens, delete_allergens
-from config.settings import ALLERGEN_OPTIONS
+from services.client import api_request
 
 from ui.actions import handle_quick_actions
 from ui.barcode import handle_barcode_scan
@@ -80,7 +80,7 @@ def profile_dialog() -> None:
     if "show_allergen_edit" not in st.session_state:
         st.session_state.show_allergen_edit = False
 
-    if st.button("Edit Allergens", use_container_width=True):
+    if st.button("Edit My Allergens", use_container_width=True):
         st.session_state.show_allergen_edit = not st.session_state.show_allergen_edit
 
     if st.session_state.show_allergen_edit:
@@ -127,22 +127,52 @@ def profile_dialog() -> None:
     
     st.divider()
 
-@st.dialog("Logout")
-def logout_dialog() -> None:
-    col1, col2 = st.columns([1, 1])
+    # Display household members' allergens if user is owner or co-owner
+    st.subheader("Household Allergens")
 
-    with col1:
-        if st.button("Yes", use_container_width=True):
-            try:
-                logout_user()
-            except Exception:
-                pass  # Local state is cleared in logout_user; ensure we still close and rerun
-            st.session_state.show_logout_dialog = False
-            st.rerun()
-    with col2:
-        if st.button("No", type="secondary", use_container_width=True):
-            st.session_state.show_logout_dialog = False
-            st.rerun()
+    user = st.session_state.user or {}
+    is_owner = user.get("is_household_owner", False)
+    is_co_owner = user.get("household_role") == "co_owner"
+
+    if not user.get("household_id"):
+        st.info("You are not part of a household.")
+    elif is_owner or is_co_owner:
+        try:
+            household_allergens = api_request("get", "/households/allergens")
+            members = fetch_household_members(user["household_id"])
+            member_map = {m.get("id"): m.get("name") or m.get("email") for m in members}
+
+            if isinstance(household_allergens, list):
+                has_any = False
+                for entry in household_allergens:
+                    allergens = entry.get("allergens", [])
+                    if allergens:
+                        has_any = True
+                        name = member_map.get(entry.get("user_id"), f"User {entry.get('user_id')}")
+                        st.write(f"**{name.title()}**: {', '.join(allergens)}")
+                if not has_any:
+                    st.info("No household members have allergens set.")
+        except Exception as e:
+            st.error(f"Failed to load household allergens: {str(e)}")
+    else:
+        st.warning("You do not have the authority to see household allergens.")
+
+    @st.dialog("Logout")
+    def logout_dialog() -> None:
+        col1, col2 = st.columns([1, 1])
+
+        with col1:
+            if st.button("Yes", use_container_width=True):
+                try:
+                    logout_user()
+                except Exception:
+                    pass  # Local state is cleared in logout_user; ensure we still close and rerun
+                st.session_state.show_logout_dialog = False
+                st.rerun()
+        with col2:
+            if st.button("No", type="secondary", use_container_width=True):
+                st.session_state.show_logout_dialog = False
+                st.rerun()
 
 
 @st.dialog("Invite to fridge")
