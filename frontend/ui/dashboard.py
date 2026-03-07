@@ -26,6 +26,7 @@ from services.client import api_request
 
 from ui.actions import handle_quick_actions
 from ui.barcode import handle_barcode_scan
+from ui.image_scan import handle_image_scan  # new photo recognition UI
 from ui.recipe import handle_generate_recipe
 
 
@@ -405,12 +406,15 @@ def handle_add_item() -> None:
 
 @st.dialog("AddItem")
 def add_item_dialog() -> None:
-    tab1, tab2 = st.tabs(["Manual Entry", "Barcode Scan"])
+    tab1, tab2, tab3 = st.tabs(["Manual Entry", "Barcode Scan", "Photo Scan"])
 
     with tab1:
         handle_add_item()
     with tab2:
         handle_barcode_scan()
+    with tab3:
+        from ui.image_scan import handle_image_scan
+        handle_image_scan()
 
 
 @st.dialog("EditItem")

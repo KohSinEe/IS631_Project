@@ -17,6 +17,9 @@ CATEGORY_OPTIONS = [
 ]
 UNIT_OPTIONS = ["pieces", "mL", "L", "g", "kg"]
 
+# optional Google Vision key for photo-based food recognition
+VISION_API_KEY = os.getenv("VISION_API_KEY")
+
 ALLERGEN_OPTIONS = [
     "PEANUTS", "SHELLFISH", "MILK", "EGGS", 
     "FISH", "TREE_NUTS", "WHEAT", "SOY", "SESAME"
