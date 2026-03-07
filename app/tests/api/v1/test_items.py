@@ -311,3 +311,45 @@ def test_list_items_unauthorized(client: TestClient, create_test_user: User) -> 
     """No auth cookie -> 401."""
     r = client.get(f"{settings.API_V1_STR}/items", params={"household_id": create_test_user.household_id})
     assert r.status_code == 401
+
+
+def test_create_item_without_expiry_autofills_from_category(auth_client: TestClient, create_test_user: User) -> None:
+    """When expiry_date is omitted the backend fills it using the category default."""
+    from app.utils.expiry import CATEGORY_DEFAULT_EXPIRY_DAYS
+
+    household_id = create_test_user.household_id
+    payload = {"name": "Cheddar", "quantity": 1, "unit": "kg", "category": "Dairy"}
+
+    r = auth_client.post(f"{settings.API_V1_STR}/items", params={"household_id": household_id}, json=payload)
+    assert r.status_code == 201
+
+    expected = (date.today() + timedelta(days=CATEGORY_DEFAULT_EXPIRY_DAYS["Dairy"])).isoformat()
+    assert r.json()["expiry_date"] == expected
+
+
+def test_create_item_explicit_expiry_overrides_default(auth_client: TestClient, create_test_user: User) -> None:
+    """An explicitly provided expiry_date is stored as-is and not replaced by the default."""
+    household_id = create_test_user.household_id
+    explicit_date = (date.today() + timedelta(days=60)).isoformat()
+    payload = {
+        "name": "Special Milk",
+        "quantity": 2,
+        "unit": "L",
+        "expiry_date": explicit_date,
+        "category": "Dairy",
+    }
+
+    r = auth_client.post(f"{settings.API_V1_STR}/items", params={"household_id": household_id}, json=payload)
+    assert r.status_code == 201
+    assert r.json()["expiry_date"] == explicit_date
+
+
+def test_create_item_without_expiry_date_is_not_in_past(auth_client: TestClient, create_test_user: User) -> None:
+    """The auto-filled expiry date is always today or in the future."""
+    household_id = create_test_user.household_id
+    payload = {"name": "Mystery item", "quantity": 1, "unit": "pieces", "category": "Other"}
+
+    r = auth_client.post(f"{settings.API_V1_STR}/items", params={"household_id": household_id}, json=payload)
+    assert r.status_code == 201
+    expiry = date.fromisoformat(r.json()["expiry_date"])
+    assert expiry >= date.today()
