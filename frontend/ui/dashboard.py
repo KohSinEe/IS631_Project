@@ -20,6 +20,10 @@ from services.invitations import (
     accept_invitation,
     decline_invitation,
 )
+
+from services.user import get_my_allergens, add_allergens, delete_allergens
+from config.settings import ALLERGEN_OPTIONS
+
 from ui.actions import handle_quick_actions
 from ui.barcode import handle_barcode_scan
 from ui.recipe import handle_generate_recipe
@@ -54,6 +58,74 @@ def profile_dialog() -> None:
                 st.error("Failed to update profile. Please try again")
                 st.error(e)
 
+    st.divider()
+
+    # Allergens section
+
+    st.subheader("My Allergens")
+
+    try:
+        current_allergens = get_my_allergens()
+    except Exception:
+        current_allergens = []
+
+    if current_allergens:
+        st.write("You are currently allergic to:")
+        st.write(", ".join(current_allergens))
+    else:
+        st.info("No allergens set.")
+
+
+    #  Add allergens 
+    if "show_allergen_edit" not in st.session_state:
+        st.session_state.show_allergen_edit = False
+
+    if st.button("Edit Allergens", use_container_width=True):
+        st.session_state.show_allergen_edit = not st.session_state.show_allergen_edit
+
+    if st.session_state.show_allergen_edit:
+        available = [a for a in ALLERGEN_OPTIONS if a not in current_allergens]
+        removable = current_allergens
+
+        if available:
+            st.write("**Add allergens:**")
+            to_add = []
+            cols = st.columns(3)
+            for i, allergen in enumerate(available):
+                with cols[i % 3]:
+                    if st.checkbox(allergen, key=f"add_{allergen}"):
+                        to_add.append(allergen)
+            if st.button("Add selected", key="add_allergens_btn"):
+                if to_add:
+                    try:
+                        add_allergens(to_add)
+                        st.success(f"Added: {', '.join(to_add)}")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(str(e))
+                else:
+                    st.warning("No allergens selected")
+
+        if removable:
+            st.write("**Remove allergens:**")
+            to_remove = []
+            cols = st.columns(3)
+            for i, allergen in enumerate(removable):
+                with cols[i % 3]:
+                    if st.checkbox(allergen, key=f"remove_{allergen}"):
+                        to_remove.append(allergen)
+            if st.button("Remove selected", key="remove_allergens_btn"):
+                if to_remove:
+                    try:
+                        delete_allergens(to_remove)
+                        st.success(f"Removed: {', '.join(to_remove)}")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(str(e))
+                else:
+                    st.warning("No allergens selected")
+    
+    st.divider()
 
 @st.dialog("Logout")
 def logout_dialog() -> None:

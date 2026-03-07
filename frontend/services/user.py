@@ -2,6 +2,7 @@ from typing import Optional, Any, Dict
 import streamlit as st
 from services.client import APIError, api_request, get_api_client
 from state.session import reset_session
+from config.settings import ALLERGEN_OPTIONS
 
 
 def register_user(
@@ -75,3 +76,17 @@ def delete_household(household_id: int) -> None:
     if st.session_state.user and isinstance(st.session_state.user, dict):
         st.session_state.user["household_id"] = None
         st.session_state.user["is_household_owner"] = False
+
+# Allergens related:
+
+def get_my_allergens() -> list:
+    result = api_request("get", "/users/me/allergens")
+    return result.get("allergens", []) if isinstance(result, dict) else []
+
+def add_allergens(allergens: list) -> list:
+    result = api_request("post", "/users/me/allergens", json={"allergens": allergens})
+    return result.get("allergens", []) if isinstance(result, dict) else []
+
+def delete_allergens(allergens: list) -> list:
+    result = api_request("delete", "/users/me/allergens", json={"allergens": allergens})
+    return result.get("allergens", []) if isinstance(result, dict) else []
