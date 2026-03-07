@@ -16,7 +16,6 @@ from app.schemas.item import (
 )
 from app.schemas.recipes import PantryItem, Recipe, RecipeGenerateRequest, RecipeGenerateResponse
 
-
 # ----- User schemas -----
 
 
@@ -123,6 +122,12 @@ def test_item_create_quantity_negative() -> None:
             expiry_date=future,
             category=Category.DAIRY,
         )
+
+
+def test_item_create_without_expiry_date() -> None:
+    """ItemCreate accepts a missing expiry_date (auto-filled by the backend from category)."""
+    item = ItemCreate(name="Steak", quantity=1, unit=UnitType.PIECES, category=Category.MEAT)
+    assert item.expiry_date is None
 
 
 def test_item_create_expiry_in_past() -> None:
