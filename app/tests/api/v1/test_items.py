@@ -12,7 +12,7 @@ def _item_payload(name: str = "Milk", **kwargs) -> dict:
         "name": name,
         "quantity": 1,
         "unit": "kg",
-        "expiry_date": "2026-03-01",
+        "expiry_date": (date.today() + timedelta(days=7)).isoformat(),
         "category": "Dairy",
     }
     defaults.update(kwargs)
@@ -114,7 +114,7 @@ def test_create_item(auth_client: TestClient, create_test_user: User) -> None:
     assert item["name"] == "Milk"
     assert item["quantity"] == 1
     assert item["unit"] == "kg"
-    assert item["expiry_date"] == "2026-03-01"
+    assert item["expiry_date"] == (date.today() + timedelta(days=7)).isoformat()
     assert item["category"] == "Dairy"
 
 
