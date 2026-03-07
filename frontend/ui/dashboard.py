@@ -2,7 +2,7 @@ import streamlit as st
 from typing import Any, Dict, List
 from datetime import date, timedelta
 
-from config.settings import EXPIRY_ALERT_DAYS, CATEGORY_OPTIONS, UNIT_OPTIONS
+from config.settings import EXPIRY_ALERT_DAYS, CATEGORY_OPTIONS, UNIT_OPTIONS, ALLERGEN_OPTIONS
 from utils.inventory import (
     parse_expiry,
     summarize_inventory,
@@ -20,6 +20,10 @@ from services.invitations import (
     accept_invitation,
     decline_invitation,
 )
+
+from services.user import get_my_allergens, add_allergens, delete_allergens
+from services.client import api_request
+
 from ui.actions import handle_quick_actions
 from ui.barcode import handle_barcode_scan
 from ui.recipe import handle_generate_recipe
@@ -54,6 +58,104 @@ def profile_dialog() -> None:
                 st.error("Failed to update profile. Please try again")
                 st.error(e)
 
+    st.divider()
+
+    # Allergens section
+
+    st.subheader("My Allergens")
+
+    try:
+        current_allergens = get_my_allergens()
+    except Exception:
+        current_allergens = []
+
+    if current_allergens:
+        st.write("You are currently allergic to:")
+        st.write(", ".join(current_allergens))
+    else:
+        st.info("No allergens set.")
+
+
+    #  Add allergens 
+    if "show_allergen_edit" not in st.session_state:
+        st.session_state.show_allergen_edit = False
+
+    if st.button("Edit My Allergens", use_container_width=True):
+        st.session_state.show_allergen_edit = not st.session_state.show_allergen_edit
+
+    if st.session_state.show_allergen_edit:
+        available = [a for a in ALLERGEN_OPTIONS if a not in current_allergens]
+        removable = current_allergens
+
+        if available:
+            st.write("**Add allergens:**")
+            to_add = []
+            cols = st.columns(3)
+            for i, allergen in enumerate(available):
+                with cols[i % 3]:
+                    if st.checkbox(allergen, key=f"add_{allergen}"):
+                        to_add.append(allergen)
+            if st.button("Add selected", key="add_allergens_btn"):
+                if to_add:
+                    try:
+                        add_allergens(to_add)
+                        st.success(f"Added: {', '.join(to_add)}")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(str(e))
+                else:
+                    st.warning("No allergens selected")
+
+        if removable:
+            st.write("**Remove allergens:**")
+            to_remove = []
+            cols = st.columns(3)
+            for i, allergen in enumerate(removable):
+                with cols[i % 3]:
+                    if st.checkbox(allergen, key=f"remove_{allergen}"):
+                        to_remove.append(allergen)
+            if st.button("Remove selected", key="remove_allergens_btn"):
+                if to_remove:
+                    try:
+                        delete_allergens(to_remove)
+                        st.success(f"Removed: {', '.join(to_remove)}")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(str(e))
+                else:
+                    st.warning("No allergens selected")
+    
+    st.divider()
+
+    # Display household members' allergens if user is owner or co-owner
+    st.subheader("Household Allergens")
+
+    user = st.session_state.user or {}
+    is_owner = user.get("is_household_owner", False)
+    is_co_owner = user.get("household_role") == "co_owner"
+
+    if not user.get("household_id"):
+        st.info("You are not part of a household.")
+    elif is_owner or is_co_owner:
+        try:
+            household_allergens = api_request("get", "/households/allergens")
+            members = fetch_household_members(user["household_id"])
+            member_map = {m.get("id"): m.get("name") or m.get("email") for m in members}
+
+            if isinstance(household_allergens, list):
+                has_any = False
+                for entry in household_allergens:
+                    allergens = entry.get("allergens", [])
+                    if allergens:
+                        has_any = True
+                        name = member_map.get(entry.get("user_id"), f"User {entry.get('user_id')}")
+                        st.write(f"**{name.title()}**: {', '.join(allergens)}")
+                if not has_any:
+                    st.info("No household members have allergens set.")
+        except Exception as e:
+            st.error(f"Failed to load household allergens: {str(e)}")
+    else:
+        st.warning("You do not have the authority to see household allergens.")
 
 @st.dialog("Logout")
 def logout_dialog() -> None:
@@ -448,15 +550,40 @@ def render_dashboard() -> None:
             if st.session_state.show_edit_item_dialog:
                 edit_item_dialog(st.session_state.filtered_inventory)
 
-    nav_col1, nav_col2, nav_col3 = st.columns(3)
-    with nav_col1:
-        if st.button("✨ Generate Recipe ✨", use_container_width=True):
-            st.session_state.page = "recipe"
-    with nav_col2:
-        if st.button("Stocktake", use_container_width=True):
-            st.session_state.page = "stocktake"
-    with nav_col3:
-        if st.button("Usage Overview", use_container_width=True):
-            st.session_state.page = "usage"
+    st.divider()
+
+    st.markdown("### Help Me Generate A Recipe")
+
+    inventory_only = not st.toggle(
+        "Consider ingredients outside my fridge",
+        value=False,
+        key="inventory_only_toggle",
+        help="When on, the AI may suggest recipes that need extra ingredients not in your fridge."
+    )
+    st.session_state.inventory_only = inventory_only
+
+    user = st.session_state.user or {}
+    if user.get("household_id"):
+        cooking_for = st.radio(
+            "Who are you cooking for?",
+            options=["myself", "household"],
+            format_func=lambda x: "Myself" if x == "myself" else "My Household",
+            horizontal=True,
+            key="cooking_for_radio",
+        )
+        st.session_state.use_household_allergens = cooking_for == "household"
+    else:
+        st.session_state.use_household_allergens = False
+
+nav_col1, nav_col2, nav_col3 = st.columns(3)
+with nav_col1:
+    if st.button("✨ Generate Recipe ✨", use_container_width=True):
+        st.session_state.page = "recipe"
+with nav_col2:
+    if st.button("Stocktake", use_container_width=True):
+        st.session_state.page = "stocktake"
+with nav_col3:
+    if st.button("Usage Overview", use_container_width=True):
+        st.session_state.page = "usage"
 
     ensure_inventory_loaded()

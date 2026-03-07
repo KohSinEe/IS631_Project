@@ -16,3 +16,8 @@ CATEGORY_OPTIONS = [
     "Other",
 ]
 UNIT_OPTIONS = ["pieces", "mL", "L", "g", "kg"]
+
+ALLERGEN_OPTIONS = [
+    "PEANUTS", "SHELLFISH", "MILK", "EGGS", 
+    "FISH", "TREE_NUTS", "WHEAT", "SOY", "SESAME"
+] # make sure this matches models.VALID_ALLERGENS in app/models/user_allergen.py

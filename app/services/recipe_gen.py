@@ -44,26 +44,43 @@ def _build_prompt(
     inventory_only: bool,
     max_recipes: int,
     preferences: Optional[Dict[str, Any]] = None,
+    allergens: Optional[List[str]] = None,
 ) -> str:
+
     prefs_text = (
         f"\nUser preferences (optional): {json.dumps(preferences)}\n" if preferences else ""
+    )
+
+    allergen_text = (
+        f"\nAllergens to avoid: {', '.join(allergens)}\n"
+        if allergens else ""
     )
 
     rules = [
         "- Return ONLY valid JSON. No markdown. No backticks. No commentary.",
         "- Output must match the schema shown.",
         f"- Provide {max_recipes} recipes.",
-        "- Use pantry items as much as possible.",
+        "- Maximise the use of ingredients available in the fridge. These should appear under 'ingredients'.",
     ]
     if inventory_only:
-        rules.append(
-            "- Do NOT include any missing ingredients. missing_ingredients must be an empty list."
-        )
-        rules.append("- If a recipe would require missing ingredients, do not output it.")
+        rules += [
+        "- Only suggest recipes that can be made entirely from the fridge ingredients listed.",
+        "- 'missing_ingredients' must always be an empty list.",
+        "- Do not suggest a recipe if it requires any ingredient not in the fridge.",
+        ]
     else:
-        rules.append(
-            "- If an ingredient is not available in pantry items, list it in missing_ingredients."
-        )
+        rules += [
+        "- If a recipe absolutely requires an ingredient not in the fridge, list it under 'missing_ingredients'. Keep missing ingredients to a minimum.",
+        "- 'ingredients' should only contain items from the fridge used in the recipe.",
+        "- 'missing_ingredients' should only contain essential items not in the fridge.",
+        ]
+    if allergens:
+        rules += [
+        f"- CRITICAL: The following ingredients are allergens and are STRICTLY FORBIDDEN: {', '.join(allergens)}.",
+        f"- Do NOT include {', '.join(allergens)} in ANY part of the recipe — not in ingredients, missing_ingredients, steps, or title.",
+        f"- If a recipe would normally use {', '.join(allergens)}, find a safe substitute or skip that recipe entirely.",
+        "- This is a food safety requirement. Ignoring allergens could harm people.",
+        ]
 
     schema = {
         "recipes": [
@@ -78,10 +95,22 @@ def _build_prompt(
         ]
     }
 
+    print(
+        "You are a helpful cooking assistant.\n"
+        "Given the following pantry items, generate practical home-cooking recipes.\n"
+        f"Pantry items: {pantry_lines}\n"
+        f"{allergen_text}"
+        f"{prefs_text}\n"
+        "JSON schema (example shape):\n"
+        f"{json.dumps(schema, indent=2)}\n\n"
+        "Rules:\n" + "\n".join(rules) + "\n\nReturn JSON only."
+    )
+
     return (
         "You are a helpful cooking assistant.\n"
         "Given the following pantry items, generate practical home-cooking recipes.\n"
         f"Pantry items: {pantry_lines}\n"
+        f"{allergen_text}"
         f"{prefs_text}\n"
         "JSON schema (example shape):\n"
         f"{json.dumps(schema, indent=2)}\n\n"
@@ -130,6 +159,7 @@ async def generate_recipes(
     max_recipes: int = 3,
     preferences: Optional[Dict[str, Any]] = None,
     use_chat_endpoint: bool = True,
+    allergens: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     pantry_lines = _normalize_items(pantry_items)
     if not pantry_lines:
@@ -145,6 +175,7 @@ async def generate_recipes(
         inventory_only=inventory_only,
         max_recipes=max_recipes,
         preferences=preferences,
+        allergens=allergens,
     )
 
     client = OllamaClient(ollama_host, api_key=api_key)

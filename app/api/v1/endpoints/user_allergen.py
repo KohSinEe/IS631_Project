@@ -22,35 +22,37 @@ def get_allergens(current_user: CurrentUserDep, db: DatabaseDep):
     )
 
 
-@router.put("/me/allergens", response_model=UserAllergenResponse, status_code=status.HTTP_200_OK)
-# Does a new replacement. Deletes all existing allergens for the user and adds the new list.
-def put_allergens(
+@router.delete("/me/allergens", response_model=UserAllergenResponse, status_code=status.HTTP_200_OK)
+def delete_allergens(
     payload: UserAllergenUpdate,
     current_user: CurrentUserDep,
     db: DatabaseDep,
 ):
-    """Replace the current user's allergens (full replace, not merge)."""
-    db.query(UserAllergen).filter(UserAllergen.user_id == current_user.id).delete()
-
-    new_allergens = [
-        UserAllergen(user_id=current_user.id, allergen=a)
-        for a in payload.allergens
-    ]
-    db.add_all(new_allergens)
+    """Remove specific allergens from the current user's list."""
+    db.query(UserAllergen).filter(
+        UserAllergen.user_id == current_user.id,
+        UserAllergen.allergen.in_(payload.allergens)
+    ).delete()
     db.commit()
 
+    remaining = (
+        db.query(UserAllergen)
+        .filter(UserAllergen.user_id == current_user.id)
+        .all()
+    )
     return UserAllergenResponse(
         user_id=current_user.id,
-        allergens=payload.allergens,
+        allergens=[a.allergen for a in remaining],
     )
 
-@router.patch("/me/allergens", response_model=UserAllergenResponse, status_code=status.HTTP_200_OK)
-def patch_allergens(
+
+@router.post("/me/allergens", response_model=UserAllergenResponse, status_code=status.HTTP_200_OK)
+def add_allergens(
     payload: UserAllergenUpdate,
     current_user: CurrentUserDep,
     db: DatabaseDep,
 ):
-    """Add allergens to the current user (merge, not replace)."""
+    """Add allergens to the current user's list."""
     existing = (
         db.query(UserAllergen)
         .filter(UserAllergen.user_id == current_user.id)

@@ -21,11 +21,11 @@ FAKE_RECIPE_RESPONSE = {
 
 
 @patch("app.api.v1.endpoints.recipes.generate_recipes", new_callable=AsyncMock)
-def test_recipes_generate_success(mock_generate: AsyncMock, client: TestClient) -> None:
+def test_recipes_generate_success(mock_generate: AsyncMock, auth_client: TestClient) -> None:
     """POST /recipes returns recipes when Ollama is available (mocked)."""
     mock_generate.return_value = FAKE_RECIPE_RESPONSE
 
-    r = client.post(
+    r = auth_client.post(
         f"{settings.API_V1_STR}/recipes",
         json={
             "items": [
@@ -46,11 +46,11 @@ def test_recipes_generate_success(mock_generate: AsyncMock, client: TestClient) 
 
 
 @patch("app.api.v1.endpoints.recipes.generate_recipes", new_callable=AsyncMock)
-def test_recipes_generate_calls_with_params(mock_generate: AsyncMock, client: TestClient) -> None:
+def test_recipes_generate_calls_with_params(mock_generate: AsyncMock, auth_client: TestClient) -> None:
     """Generate is called with request params and defaults."""
     mock_generate.return_value = FAKE_RECIPE_RESPONSE
 
-    client.post(
+    auth_client.post(
         f"{settings.API_V1_STR}/recipes",
         json={
             "items": [{"name": "rice"}],
@@ -67,9 +67,9 @@ def test_recipes_generate_calls_with_params(mock_generate: AsyncMock, client: Te
     assert call_kwargs["pantry_items"][0]["name"] == "rice"
 
 
-def test_recipes_generate_empty_items_validation(client: TestClient) -> None:
+def test_recipes_generate_empty_items_validation(auth_client: TestClient) -> None:
     """Empty items list is rejected by service with 400."""
-    r = client.post(
+    r = auth_client.post(
         f"{settings.API_V1_STR}/recipes",
         json={"items": [], "inventory_only": True, "max_recipes": 1},
     )
@@ -78,11 +78,11 @@ def test_recipes_generate_empty_items_validation(client: TestClient) -> None:
 
 
 @patch("app.api.v1.endpoints.recipes.generate_recipes", new_callable=AsyncMock)
-def test_recipes_generate_service_error(mock_generate: AsyncMock, client: TestClient) -> None:
+def test_recipes_generate_service_error(mock_generate: AsyncMock, auth_client: TestClient) -> None:
     """When generate_recipes raises, API returns 500."""
     mock_generate.side_effect = ValueError("Ollama unavailable")
 
-    r = client.post(
+    r = auth_client.post(
         f"{settings.API_V1_STR}/recipes",
         json={"items": [{"name": "egg"}], "inventory_only": True, "max_recipes": 1},
     )
