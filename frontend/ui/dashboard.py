@@ -157,22 +157,22 @@ def profile_dialog() -> None:
     else:
         st.warning("You do not have the authority to see household allergens.")
 
-    @st.dialog("Logout")
-    def logout_dialog() -> None:
-        col1, col2 = st.columns([1, 1])
+@st.dialog("Logout")
+def logout_dialog() -> None:
+    col1, col2 = st.columns([1, 1])
 
-        with col1:
-            if st.button("Yes", use_container_width=True):
-                try:
-                    logout_user()
-                except Exception:
-                    pass  # Local state is cleared in logout_user; ensure we still close and rerun
-                st.session_state.show_logout_dialog = False
-                st.rerun()
-        with col2:
-            if st.button("No", type="secondary", use_container_width=True):
-                st.session_state.show_logout_dialog = False
-                st.rerun()
+    with col1:
+        if st.button("Yes", use_container_width=True):
+            try:
+                logout_user()
+            except Exception:
+                pass  # Local state is cleared in logout_user; ensure we still close and rerun
+            st.session_state.show_logout_dialog = False
+            st.rerun()
+    with col2:
+        if st.button("No", type="secondary", use_container_width=True):
+            st.session_state.show_logout_dialog = False
+            st.rerun()
 
 
 @st.dialog("Invite to fridge")
