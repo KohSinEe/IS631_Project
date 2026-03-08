@@ -2,8 +2,7 @@ import streamlit as st
 from typing import Any, Dict, List
 from datetime import date, timedelta
 
-from config.settings import EXPIRY_ALERT_DAYS, CATEGORY_OPTIONS, UNIT_OPTIONS, CATEGORY_DEFAULT_EXPIRY_DAYS
-from config.settings import EXPIRY_ALERT_DAYS, CATEGORY_OPTIONS, UNIT_OPTIONS, ALLERGEN_OPTIONS
+from config.settings import EXPIRY_ALERT_DAYS, CATEGORY_OPTIONS, UNIT_OPTIONS, ALLERGEN_OPTIONS, CATEGORY_DEFAULT_EXPIRY_DAYS
 from utils.inventory import (
     parse_expiry,
     summarize_inventory,
@@ -77,8 +76,7 @@ def profile_dialog() -> None:
     else:
         st.info("No allergens set.")
 
-
-    #  Add allergens 
+    #  Add allergens
     if "show_allergen_edit" not in st.session_state:
         st.session_state.show_allergen_edit = False
 
@@ -126,7 +124,7 @@ def profile_dialog() -> None:
                         st.error(str(e))
                 else:
                     st.warning("No allergens selected")
-    
+
     st.divider()
 
     # Display household members' allergens if user is owner or co-owner
@@ -158,6 +156,7 @@ def profile_dialog() -> None:
             st.error(f"Failed to load household allergens: {str(e)}")
     else:
         st.warning("You do not have the authority to see household allergens.")
+
 
 @st.dialog("Logout")
 def logout_dialog() -> None:
@@ -230,10 +229,7 @@ def invitation_notification_dialog(invites: list) -> None:
 
 @st.dialog("Delete fridge")
 def delete_fridge_dialog(household_id: int) -> None:
-    st.warning(
-        "This will permanently delete your fridge and all its contents. "
-        "All members will be removed from the fridge. This cannot be undone."
-    )
+    st.warning("This will permanently delete your fridge and all its contents. " "All members will be removed from the fridge. This cannot be undone.")
     col1, col2 = st.columns([1, 1])
     with col1:
         if st.button("Cancel", type="secondary", use_container_width=True):
@@ -280,17 +276,9 @@ def render_header() -> None:
                 st.session_state.show_profile_dialog = True
                 if st.session_state.show_profile_dialog:
                     profile_dialog()
-            if (
-                user.get("household_id")
-                and user.get("is_household_owner")
-                and st.button("Invite to fridge", use_container_width=True)
-            ):
+            if user.get("household_id") and user.get("is_household_owner") and st.button("Invite to fridge", use_container_width=True):
                 st.session_state.show_invite_dialog = True
-            if (
-                user.get("household_id")
-                and user.get("is_household_owner")
-                and st.button("Delete fridge", use_container_width=True)
-            ):
+            if user.get("household_id") and user.get("is_household_owner") and st.button("Delete fridge", use_container_width=True):
                 st.session_state.show_delete_fridge_dialog = True
             if st.button("Sign out", type="secondary", use_container_width=True):
                 st.session_state.show_logout_dialog = True
@@ -418,6 +406,7 @@ def add_item_dialog() -> None:
         handle_barcode_scan()
     with tab3:
         from ui.image_scan import handle_image_scan
+
         handle_image_scan()
 
 
@@ -500,9 +489,7 @@ def render_dashboard() -> None:
     household_id = st.session_state.household_id
     if not household_id:
         if not pending:
-            st.info(
-                "You do not belong to a fridge yet. Get invited by an owner, or create an account with a household name."
-            )
+            st.info("You do not belong to a fridge yet. Get invited by an owner, or create an account with a household name.")
         ensure_inventory_loaded()
         return
 
@@ -562,16 +549,12 @@ def render_dashboard() -> None:
             if st.session_state.show_edit_item_dialog:
                 edit_item_dialog(st.session_state.filtered_inventory)
 
-
     st.divider()
 
     st.markdown("### Help Me Generate A Recipe")
 
     inventory_only = not st.toggle(
-        "Consider ingredients outside my fridge",
-        value=False,
-        key="inventory_only_toggle",
-        help="When on, the AI may suggest recipes that need extra ingredients not in your fridge."
+        "Consider ingredients outside my fridge", value=False, key="inventory_only_toggle", help="When on, the AI may suggest recipes that need extra ingredients not in your fridge."
     )
     st.session_state.inventory_only = inventory_only
 
@@ -589,6 +572,6 @@ def render_dashboard() -> None:
         st.session_state.use_household_allergens = False
 
     if st.button("✨ Generate Recipe ✨", use_container_width=True):
-            st.session_state.page = "recipe"
+        st.session_state.page = "recipe"
 
     ensure_inventory_loaded()

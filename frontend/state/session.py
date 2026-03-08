@@ -11,6 +11,7 @@ SESSION_DEFAULTS = {
     "sort_by_expiry": True,
     "detected_barcode": None,
     "detected_product_info": None,
+    "expiry_toasts_shown": False,
     # Form keys
     "login_email": "",
     "login_password": "",
