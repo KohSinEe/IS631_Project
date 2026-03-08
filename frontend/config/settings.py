@@ -29,3 +29,10 @@ CATEGORY_DEFAULT_EXPIRY_DAYS: dict[str, int] = {
     "Frozen": 180,
     "Other": 30,
 }
+# optional Google Vision key for photo-based food recognition
+VISION_API_KEY = os.getenv("VISION_API_KEY")
+
+ALLERGEN_OPTIONS = [
+    "PEANUTS", "SHELLFISH", "MILK", "EGGS", 
+    "FISH", "TREE_NUTS", "WHEAT", "SOY", "SESAME"
+] # make sure this matches models.VALID_ALLERGENS in app/models/user_allergen.py

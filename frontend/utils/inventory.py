@@ -13,7 +13,7 @@ def parse_expiry(raw_value: str) -> date:
 
 
 def ensure_inventory_loaded() -> None:
-    if not st.session_state.is_authenticated or not st.session_state.household_id:
+    if not st.session_state.get("is_authenticated") or not st.session_state.get("household_id"):
         st.session_state.inventory = []
         st.session_state.inventory_dirty = False
         return
@@ -58,3 +58,41 @@ def summarize_inventory(items: List[Dict[str, Any]]) -> Dict[str, Any]:
         "overdue": overdue,
         "expiring_items": expiring,
     }
+
+
+# helpers for expiry suggestions ------------------------------------------------
+# these are arbitrary defaults used by the photo scan UI; more sophisticated
+# logic could be added later (e.g. based on category stored on the backend).
+CATEGORY_EXPIRY_DAYS = {
+    "dairy": 7,
+    "fruit": 14,
+    "vegetable": 21,
+    "spice": 180,
+    "grain": 180,
+    "meat": 7,
+}
+
+# some common foods we might encounter in photo labels
+FOOD_TO_CATEGORY = {
+    "milk": "dairy",
+    "cheese": "dairy",
+    "yogurt": "dairy",
+    "ginger": "vegetable",
+    "potato": "vegetable",
+    "banana": "fruit",
+    "orange": "fruit",
+    "onion": "vegetable",
+    "noodles": "grain",
+    "chicken": "meat",
+    "beef": "meat",
+}
+
+
+def suggest_expiry_for_name(name: str, purchase: date) -> date:
+    """Return a default expiry date based on the food name."""
+    if not name:
+        return purchase
+    n = name.lower().strip()
+    cat = FOOD_TO_CATEGORY.get(n)
+    days = CATEGORY_EXPIRY_DAYS.get(cat, 7)
+    return purchase + timedelta(days=days)

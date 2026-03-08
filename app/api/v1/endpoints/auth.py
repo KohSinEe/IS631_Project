@@ -53,11 +53,19 @@ def register(user_in: UserCreate, db: DatabaseDep):
         household_id=household_id,
         is_active=True
     )
-    
+
     db.add(user)
+    db.flush()  # Get user.id
+
+    # Set household owner when user created the household
+    if household_id and user.household_id:
+        household = db.query(Household).filter(Household.id == household_id).first()
+        if household:
+            household.owner_id = user.id
+
     db.commit()
     db.refresh(user)
-    
+
     return user
 
 

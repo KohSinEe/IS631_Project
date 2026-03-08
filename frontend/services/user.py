@@ -3,6 +3,7 @@ from typing import Optional, Any, Dict
 import streamlit as st
 from services.client import APIError, api_request, get_api_client
 from state.session import reset_session
+from config.settings import ALLERGEN_OPTIONS
 
 
 def register_user(
@@ -35,11 +36,15 @@ def login_user(email: str, password: str) -> None:
 def logout_user() -> None:
     try:
         api_request("post", "/auth/logout")
-    except APIError:
+    except Exception:
+        # Always clear local state even if server request fails (e.g. network, 401)
         pass
 
-    client = get_api_client()
-    client.cookies.clear()
+    try:
+        client = get_api_client()
+        client.cookies.clear()
+    except Exception:
+        pass
     reset_session()
 
 
@@ -79,3 +84,28 @@ def reset_password(email: str, new_password: str) -> None:
     except APIError as e:
         st.error(f"Failed to reset password: {e}")
         raise
+
+
+def delete_household(household_id: int) -> None:
+    """Delete the current user's fridge (household) and all its contents. Owner only."""
+    api_request("delete", f"/households/{household_id}")
+    st.session_state.household_id = None
+    st.session_state.inventory = []
+    st.session_state.inventory_dirty = True
+    if st.session_state.user and isinstance(st.session_state.user, dict):
+        st.session_state.user["household_id"] = None
+        st.session_state.user["is_household_owner"] = False
+
+# Allergens related:
+
+def get_my_allergens() -> list:
+    result = api_request("get", "/users/me/allergens")
+    return result.get("allergens", []) if isinstance(result, dict) else []
+
+def add_allergens(allergens: list) -> list:
+    result = api_request("post", "/users/me/allergens", json={"allergens": allergens})
+    return result.get("allergens", []) if isinstance(result, dict) else []
+
+def delete_allergens(allergens: list) -> list:
+    result = api_request("delete", "/users/me/allergens", json={"allergens": allergens})
+    return result.get("allergens", []) if isinstance(result, dict) else []

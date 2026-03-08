@@ -21,7 +21,7 @@ from app.database import Base, engine
 
 load_dotenv()
 
-# Create database tables
+# Create database tables from current schema
 Base.metadata.create_all(bind=engine)
 
 # Create FastAPI application

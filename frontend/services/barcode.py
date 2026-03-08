@@ -7,6 +7,55 @@ from datetime import date
 from services.client import APIError, api_request
 
 
+def _normalize_decoded_values(values: Any) -> List[str]:
+    """Normalize OpenCV decoded barcode output into a clean list of strings."""
+    if values is None:
+        return []
+
+    if isinstance(values, np.ndarray):
+        values = values.tolist()
+
+    if isinstance(values, (list, tuple)):
+        normalized: List[str] = []
+        for value in values:
+            if isinstance(value, bytes):
+                value = value.decode(errors="ignore")
+            if isinstance(value, str):
+                stripped = value.strip()
+                if stripped:
+                    normalized.append(stripped)
+        return normalized
+
+    if isinstance(values, bytes):
+        values = values.decode(errors="ignore")
+
+    if isinstance(values, str):
+        stripped = values.strip()
+        return [stripped] if stripped else []
+
+    return []
+
+
+def _decode_with_detector(detector: cv2.barcode_BarcodeDetector, image: np.ndarray) -> List[str]:
+    """Decode barcodes from an image while handling OpenCV version output differences."""
+    result = detector.detectAndDecode(image)
+
+    if not isinstance(result, tuple):
+        return _normalize_decoded_values(result)
+
+    # Common signature: (ok, decoded_info, decoded_type)
+    if len(result) >= 2:
+        decoded = _normalize_decoded_values(result[1])
+        if decoded:
+            return decoded
+
+    # Fallback for versions that may return decoded value first
+    if len(result) >= 1:
+        return _normalize_decoded_values(result[0])
+
+    return []
+
+
 def lookup_barcode_product(barcode: str) -> Optional[Dict[str, Any]]:
     """Look up product information by barcode."""
     try:
@@ -47,32 +96,22 @@ def detect_barcodes_in_image(image: np.ndarray) -> List[str]:
     try:
         detector = cv2.barcode_BarcodeDetector()
 
-        # detector.detectAndDecode returns (retval, decoded_info, decoded_type)
-        ok, decoded_info, _decoded_type = detector.detectAndDecode(image)
-
-        detected: List[str] = []
-        if ok and decoded_info:
-            for value in decoded_info:
-                if value:
-                    detected.append(value)
+        detected: List[str] = _decode_with_detector(detector, image)
 
         # Fallback: retry with grayscale if nothing found
         if not detected:
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            ok, decoded_info, _decoded_type = detector.detectAndDecode(gray)
-            if ok and decoded_info:
-                detected.extend([v for v in decoded_info if v])
+            detected.extend(_decode_with_detector(detector, gray))
 
         # Additional fallback: increase contrast
         if not detected:
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
             enhanced = clahe.apply(gray)
-            ok, decoded_info, _decoded_type = detector.detectAndDecode(enhanced)
-            if ok and decoded_info:
-                detected.extend([v for v in decoded_info if v])
+            detected.extend(_decode_with_detector(detector, enhanced))
 
-        return detected
+        # Deduplicate while preserving order
+        return list(dict.fromkeys(detected))
     except Exception as e:
         st.warning(f"Error detecting barcode: {e}")
         return []

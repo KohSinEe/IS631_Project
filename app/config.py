@@ -3,6 +3,7 @@
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import json
+import os
 
 
 class Settings(BaseSettings):
@@ -31,8 +32,13 @@ class Settings(BaseSettings):
         "http://localhost:8501"
     ]
     
+    # pick which env file to load; prefer ".env" but fall back to the template
+    _env_file = ".env"
+    if not os.path.exists(_env_file):
+        _env_file = ".env.example"
+
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_env_file,
         case_sensitive=True,
         extra="ignore"
     )

@@ -8,6 +8,8 @@ from app.models.item import CategoryEnum, UnitEnum
 
 
 def _item_payload(name: str = "Milk", **kwargs) -> dict:
+    # Use a future expiry so validation passes regardless of run date (CI or local)
+    future_expiry = (date.today() + timedelta(days=30)).isoformat()
     defaults = {
         "name": name,
         "quantity": 1,

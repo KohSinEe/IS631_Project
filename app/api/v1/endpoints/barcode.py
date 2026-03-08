@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import date
+from pydantic import BaseModel, Field
 
 from app.database import get_db
 from app.models import Item
@@ -15,17 +16,27 @@ from app.core.security import get_current_user
 router = APIRouter()
 
 
-class BarcodeItemCreate(ItemResponse):
-    """Schema for item created from barcode."""
-    barcode: Optional[str] = None
+class BarcodeProductResponse(BaseModel):
+    """Product information returned from barcode lookup."""
+    barcode: str
+    name: str
+    category: str
+    brand: Optional[str] = None
+    image_url: Optional[str] = None
+    suggested_expiry_days: str = Field(..., description="Auto-estimated expiry date (ISO format)")
 
 
-@router.get("/lookup/{barcode}")
+class BarcodeItemResponse(ItemResponse):
+    """Item created from barcode scan."""
+    barcode: str = Field(..., description="Original barcode scanned")
+
+
+@router.get("/lookup/{barcode}", response_model=BarcodeProductResponse)
 async def lookup_barcode(
     barcode: str,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
-):
+) -> BarcodeProductResponse:
     """
     Look up product information by barcode.
     
@@ -39,17 +50,17 @@ async def lookup_barcode(
             detail=f"No product found for barcode: {barcode}"
         )
     
-    return {
-        "barcode": product.barcode,
-        "name": product.name,
-        "category": product.category or "Other",
-        "brand": product.brand,
-        "image_url": product.image_url,
-        "suggested_expiry_days": barcode_service.estimate_expiry_date(product)
-    }
+    return BarcodeProductResponse(
+        barcode=product.barcode,
+        name=product.name,
+        category=product.category or "Other",
+        brand=product.brand,
+        image_url=product.image_url,
+        suggested_expiry_days=barcode_service.estimate_expiry_date(product)
+    )
 
 
-@router.post("/add-from-barcode")
+@router.post("/add-from-barcode", status_code=status.HTTP_201_CREATED, response_model=BarcodeItemResponse)
 async def add_item_from_barcode(
     barcode: str = Query(..., description="Product barcode"),
     quantity: int = Query(1, ge=1, description="Quantity to add"),
@@ -58,20 +69,21 @@ async def add_item_from_barcode(
     household_id: int = Query(None, description="Household ID"),
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
-):
+) -> BarcodeItemResponse:
     """
     Scan a barcode and automatically add the product to inventory.
     
     Flow:
     1. Look up product by barcode
     2. Create item in inventory with recognized product info
-    3. Return created item
+    3. Return created item with 201 Created status
     
     Query parameters:
     - **barcode**: Product barcode/EAN
     - **quantity**: How many to add (default: 1)
     - **expiry_date**: Expiry date (optional - auto-estimated if not provided)
-    - **household_id**: Target household ID
+    - **category_override**: Override auto-detected category if needed
+    - **household_id**: Target household ID (required)
     """
     if not household_id:
         raise HTTPException(
@@ -117,16 +129,12 @@ async def add_item_from_barcode(
     db.commit()
     db.refresh(new_item)
     
-    return {
-        "id": new_item.id,
-        "barcode": barcode,
-        "name": new_item.name,
-        "quantity": new_item.quantity,
-        "unit": new_item.unit,
-        "expiry_date": new_item.expiry_date,
-        "category": new_item.category,
-        "message": f"✓ {product.name} added to inventory"
-    }
+    return BarcodeItemResponse.model_validate(
+        {
+            **new_item.__dict__,
+            "barcode": barcode
+        }
+    )
 
 
 def map_category(open_food_category: Optional[str]) -> CategoryEnum:
