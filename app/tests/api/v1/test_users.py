@@ -9,7 +9,7 @@ from app.models import User
 
 
 def test_get_me(auth_client: TestClient, create_test_user: User) -> None:
-    #tests that the API returns a 200 status code and the correct user data
+    # tests that the API returns a 200 status code and the correct user data
     """Authenticated user can get their profile."""
     r = auth_client.get(f"{settings.API_V1_STR}/users/me")
     assert r.status_code == 200
@@ -22,7 +22,7 @@ def test_get_me(auth_client: TestClient, create_test_user: User) -> None:
 
 
 def test_get_me_unauthorized(client: TestClient, create_test_user: User) -> None:
-    #tests that the API returns a 401 error if the user is not authenticated
+    # tests that the API returns a 401 error if the user is not authenticated
     """Without auth cookie, GET /me returns 401."""
     r = client.get(f"{settings.API_V1_STR}/users/me")
     assert r.status_code == 401
@@ -32,7 +32,7 @@ def test_get_me_unauthorized(client: TestClient, create_test_user: User) -> None
 
 
 def test_update_me(auth_client: TestClient, create_test_user: User) -> None:
-    #tests that the API returns a 200 status code and the correct user data
+    # tests that the API returns a 200 status code and the correct user data
     """Authenticated user can update their name."""
     r = auth_client.put(
         f"{settings.API_V1_STR}/users/me",
@@ -45,7 +45,7 @@ def test_update_me(auth_client: TestClient, create_test_user: User) -> None:
 
 
 def test_update_me_partial(auth_client: TestClient, create_test_user: User) -> None:
-    #tests that the API returns a 200 status code and the correct user data
+    # tests that the API returns a 200 status code and the correct user data
     """Partial update only changes provided fields."""
     r = auth_client.put(
         f"{settings.API_V1_STR}/users/me",
@@ -56,7 +56,7 @@ def test_update_me_partial(auth_client: TestClient, create_test_user: User) -> N
 
 
 def test_update_me_unauthorized(client: TestClient, create_test_user: User) -> None:
-    #tests that the API returns a 401 error if the user is not authenticated
+    # tests that the API returns a 401 error if the user is not authenticated
     """Without auth, PUT /me returns 401."""
     r = client.put(
         f"{settings.API_V1_STR}/users/me",
@@ -69,7 +69,7 @@ def test_update_me_unauthorized(client: TestClient, create_test_user: User) -> N
 
 
 def test_change_password_success(auth_client: TestClient, create_test_user: User) -> None:
-    #tests that the API returns a 200 status code and the correct user data
+    # tests that the API returns a 200 status code and the correct user data
     """User can change password with correct current password."""
     r = auth_client.put(
         f"{settings.API_V1_STR}/users/me/password",
@@ -91,7 +91,7 @@ def test_change_password_success(auth_client: TestClient, create_test_user: User
 
 
 def test_change_password_wrong_current(auth_client: TestClient, create_test_user: User) -> None:
-    #tests that the API returns a 400 error if the current password is incorrect
+    # tests that the API returns a 400 error if the current password is incorrect
     """Wrong current password returns 400."""
     r = auth_client.put(
         f"{settings.API_V1_STR}/users/me/password",
@@ -105,7 +105,7 @@ def test_change_password_wrong_current(auth_client: TestClient, create_test_user
 
 
 def test_change_password_same_as_current(auth_client: TestClient, create_test_user: User) -> None:
-    #tests that the API returns a 400 error if the new password is the same as the current password
+    # tests that the API returns a 400 error if the new password is the same as the current password
     """New password same as current returns 400."""
     r = auth_client.put(
         f"{settings.API_V1_STR}/users/me/password",
@@ -119,7 +119,7 @@ def test_change_password_same_as_current(auth_client: TestClient, create_test_us
 
 
 def test_change_password_unauthorized(client: TestClient, create_test_user: User) -> None:
-    #tests that the API returns a 401 error if the user is not authenticated
+    # tests that the API returns a 401 error if the user is not authenticated
     """Without auth, PUT /me/password returns 401."""
     r = client.put(
         f"{settings.API_V1_STR}/users/me/password",
@@ -135,7 +135,7 @@ def test_change_password_unauthorized(client: TestClient, create_test_user: User
 
 
 def test_delete_me(auth_client: TestClient, create_test_user: User) -> None:
-    #tests that the API returns a 204 status code and the user is deleted
+    # tests that the API returns a 204 status code and the user is deleted
     """Authenticated user can delete their account."""
     r = auth_client.delete(f"{settings.API_V1_STR}/users/me")
     assert r.status_code == 204
@@ -146,7 +146,7 @@ def test_delete_me(auth_client: TestClient, create_test_user: User) -> None:
 
 
 def test_delete_me_unauthorized(client: TestClient, create_test_user: User) -> None:
-    #tests that the API returns a 401 error if the user is not authenticated
+    # tests that the API returns a 401 error if the user is not authenticated
     """Without auth, DELETE /me returns 401."""
     r = client.delete(f"{settings.API_V1_STR}/users/me")
     assert r.status_code == 401

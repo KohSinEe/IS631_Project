@@ -8,14 +8,11 @@ from app.models.user import User
 
 router = APIRouter()
 
+
 @router.get("/me/allergens", response_model=UserAllergenResponse, status_code=status.HTTP_200_OK)
 def get_allergens(current_user: CurrentUserDep, db: DatabaseDep):
     """Get allergens for the current user."""
-    allergens = (
-        db.query(UserAllergen)
-        .filter(UserAllergen.user_id == current_user.id)
-        .all()
-    )
+    allergens = db.query(UserAllergen).filter(UserAllergen.user_id == current_user.id).all()
     return UserAllergenResponse(
         user_id=current_user.id,
         allergens=[a.allergen for a in allergens],
@@ -30,16 +27,11 @@ def delete_allergens(
 ):
     """Remove specific allergens from the current user's list."""
     db.query(UserAllergen).filter(
-        UserAllergen.user_id == current_user.id,
-        UserAllergen.allergen.in_(payload.allergens)
+        UserAllergen.user_id == current_user.id, UserAllergen.allergen.in_(payload.allergens)
     ).delete()
     db.commit()
 
-    remaining = (
-        db.query(UserAllergen)
-        .filter(UserAllergen.user_id == current_user.id)
-        .all()
-    )
+    remaining = db.query(UserAllergen).filter(UserAllergen.user_id == current_user.id).all()
     return UserAllergenResponse(
         user_id=current_user.id,
         allergens=[a.allergen for a in remaining],
@@ -53,11 +45,7 @@ def add_allergens(
     db: DatabaseDep,
 ):
     """Add allergens to the current user's list."""
-    existing = (
-        db.query(UserAllergen)
-        .filter(UserAllergen.user_id == current_user.id)
-        .all()
-    )
+    existing = db.query(UserAllergen).filter(UserAllergen.user_id == current_user.id).all()
     existing_set = {a.allergen for a in existing}
 
     # Only insert allergens that don't already exist

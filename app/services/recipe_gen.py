@@ -61,10 +61,7 @@ def _build_prompt(
         f"\nUser preferences (optional): {json.dumps(preferences)}\n" if preferences else ""
     )
 
-    allergen_text = (
-        f"\nAllergens to avoid: {', '.join(allergens)}\n"
-        if allergens else ""
-    )
+    allergen_text = f"\nAllergens to avoid: {', '.join(allergens)}\n" if allergens else ""
 
     rules = [
         "- Return ONLY valid JSON. No markdown. No backticks. No commentary.",
@@ -81,22 +78,22 @@ def _build_prompt(
     ]
     if inventory_only:
         rules += [
-        "- Only suggest recipes that can be made entirely from the fridge ingredients listed.",
-        "- 'missing_ingredients' must always be an empty list.",
-        "- Do not suggest a recipe if it requires any ingredient not in the fridge.",
+            "- Only suggest recipes that can be made entirely from the fridge ingredients listed.",
+            "- 'missing_ingredients' must always be an empty list.",
+            "- Do not suggest a recipe if it requires any ingredient not in the fridge.",
         ]
     else:
         rules += [
-        "- If a recipe absolutely requires an ingredient not in the fridge, list it under 'missing_ingredients'. Keep missing ingredients to a minimum.",
-        "- 'ingredients' should only contain items from the fridge used in the recipe.",
-        "- 'missing_ingredients' should only contain essential items not in the fridge.",
+            "- If a recipe absolutely requires an ingredient not in the fridge, list it under 'missing_ingredients'. Keep missing ingredients to a minimum.",
+            "- 'ingredients' should only contain items from the fridge used in the recipe.",
+            "- 'missing_ingredients' should only contain essential items not in the fridge.",
         ]
     if allergens:
         rules += [
-        f"- CRITICAL: The following ingredients are allergens and are STRICTLY FORBIDDEN: {', '.join(allergens)}.",
-        f"- Do NOT include {', '.join(allergens)} in ANY part of the recipe — not in ingredients, missing_ingredients, steps, or title.",
-        f"- If a recipe would normally use {', '.join(allergens)}, find a safe substitute or skip that recipe entirely.",
-        "- This is a food safety requirement. Ignoring allergens could harm people.",
+            f"- CRITICAL: The following ingredients are allergens and are STRICTLY FORBIDDEN: {', '.join(allergens)}.",
+            f"- Do NOT include {', '.join(allergens)} in ANY part of the recipe — not in ingredients, missing_ingredients, steps, or title.",
+            f"- If a recipe would normally use {', '.join(allergens)}, find a safe substitute or skip that recipe entirely.",
+            "- This is a food safety requirement. Ignoring allergens could harm people.",
         ]
 
     schema = {
@@ -117,16 +114,10 @@ def _build_prompt(
             {
                 "title": "Simple Egg Dish",
                 "time_minutes": 10,
-                "ingredients": [
-                    "2 pieces egg",
-                    "50 g rice"
-                ],
+                "ingredients": ["2 pieces egg", "50 g rice"],
                 "missing_ingredients": [],
-                "steps": [
-                    "Beat the eggs.",
-                    "Cook them in a pan."
-                ],
-                "reason": "Uses available pantry items."
+                "steps": ["Beat the eggs.", "Cook them in a pan."],
+                "reason": "Uses available pantry items.",
             }
         ]
     }

@@ -29,7 +29,7 @@ def display_recipes(result):
 
             if "reason" in recipe:
                 st.markdown(f"**Reason for this recipe:** {recipe['reason']}")
-            
+
             cook_key = f"cook_in_progress_{idx}_{recipe['title']}"
             if cook_key not in st.session_state:
                 st.session_state[cook_key] = False
@@ -46,7 +46,6 @@ def display_recipes(result):
                         st.error(f"Failed to cook recipe: {e}")
 
 
-
 def handle_generate_recipe():
     st.title("Generate recipe")
 
@@ -54,7 +53,7 @@ def handle_generate_recipe():
         st.session_state.category_filter = "All"
         st.session_state.page = "dashboard"
         st.rerun()
-    
+
     inventory_only = st.session_state.get("inventory_only", True)
     use_household_allergens = st.session_state.get("use_household_allergens", False)
 
@@ -66,13 +65,13 @@ def handle_generate_recipe():
     with st.spinner("Generating recipes…"):
         try:
             recipe = generate_recipe(
-                                        inventory,
-                                        max_recipes=3,
-                                        inventory_only=inventory_only,
-                                        preferences={},
-                                        use_household_allergens=use_household_allergens,
-                                    )
+                inventory,
+                max_recipes=3,
+                inventory_only=inventory_only,
+                preferences={},
+                use_household_allergens=use_household_allergens,
+            )
             display_recipes(recipe)
-        
+
         except Exception as e:
             st.error(f"Failed to generate recipes: {e}")

@@ -25,6 +25,6 @@ class Household(Base):
     )
     items = relationship("Item", back_populates="household", cascade="all, delete-orphan")
     owner = relationship("User", foreign_keys=[owner_id])
-    
+
     def __repr__(self):
         return f"<Household(id={self.id}, name='{self.name}')>"

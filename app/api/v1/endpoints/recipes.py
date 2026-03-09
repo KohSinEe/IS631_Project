@@ -47,6 +47,7 @@ async def generate(req: RecipeGenerateRequest, current_user: CurrentUserDep, db:
             detail=msg,
         )
 
+
 @router.post("/cook")
 def cook(
     req: CookRecipeRequest,

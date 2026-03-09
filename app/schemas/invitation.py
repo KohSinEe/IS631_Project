@@ -10,12 +10,14 @@ from app.models.enums import HouseholdRoleEnum, InvitationStatusEnum
 
 class InviteCreate(BaseModel):
     """Schema for creating an invitation."""
+
     email: EmailStr = Field(..., description="Email of the user to invite")
     role: HouseholdRoleEnum = Field(..., description="Role to assign: co_owner or child")
 
 
 class InvitationResponse(BaseModel):
     """Schema for invitation in API responses."""
+
     id: int
     household_id: int
     inviter_id: int
@@ -36,6 +38,7 @@ class InvitationResponse(BaseModel):
 
 class InvitationListForUser(BaseModel):
     """Invitation with household name for 'my pending invites' list."""
+
     id: int
     household_id: int
     household_name: str
@@ -47,6 +50,7 @@ class InvitationListForUser(BaseModel):
 
 class HouseholdMemberResponse(BaseModel):
     """A household member with their role (for member list)."""
+
     id: int
     email: str
     name: Optional[str] = None

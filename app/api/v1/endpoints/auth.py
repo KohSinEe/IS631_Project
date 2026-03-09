@@ -13,7 +13,7 @@ from app.core.security import (
     verify_password,
     get_password_hash,
     create_access_token,
-    create_refresh_token
+    create_refresh_token,
 )
 
 router = APIRouter()
@@ -23,7 +23,7 @@ router = APIRouter()
 def register(user_in: UserCreate, db: DatabaseDep):
     """
     Register a new user.
-    
+
     - **email**: Valid email address
     - **password**: At least 8 characters
     - **name**: Optional display name
@@ -33,10 +33,9 @@ def register(user_in: UserCreate, db: DatabaseDep):
     existing_user = db.query(User).filter(User.email == user_in.email).first()
     if existing_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
         )
-    
+
     # Create household if provided
     household_id = None
     if user_in.household_name:
@@ -44,14 +43,14 @@ def register(user_in: UserCreate, db: DatabaseDep):
         db.add(household)
         db.flush()  # Get the ID without committing
         household_id = household.id
-    
+
     # Create user (use only password, password_confirm is validated by schema)
     user = User(
         email=user_in.email,
         name=user_in.name,
         hashed_password=get_password_hash(user_in.password),
         household_id=household_id,
-        is_active=True
+        is_active=True,
     )
 
     db.add(user)
@@ -77,7 +76,7 @@ def login(
 ):
     """
     Login with email and password.
-    
+
     Sets secure HTTP-only cookie with access token.
     Returns access token and refresh token for frontend use if needed.
     """
@@ -91,18 +90,17 @@ def login(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Check if user is active
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is inactive"
+            status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive"
         )
-    
+
     # Create tokens
     access_token = create_access_token(data={"sub": user.id})
     refresh_token = create_refresh_token(data={"sub": user.id})
-    
+
     # Set secure HTTP-only cookie with access token
     response.set_cookie(
         key="access_token",
@@ -110,10 +108,10 @@ def login(
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         httponly=True,  # Prevents JavaScript access (XSS protection)
         secure=settings.COOKIE_SECURE,  # Allow HTTP cookies during local development
-        samesite="lax", # CSRF protection
-        path="/"
+        samesite="lax",  # CSRF protection
+        path="/",
     )
-    
+
     # Optionally set refresh token cookie (can use for auto-refresh)
     response.set_cookie(
         key="refresh_token",
@@ -122,9 +120,9 @@ def login(
         httponly=True,
         secure=settings.COOKIE_SECURE,
         samesite="lax",
-        path="/"
+        path="/",
     )
-    
+
     # Return OAuth2-compatible token response (for any frontend that needs tokens)
     return {
         "access_token": access_token,

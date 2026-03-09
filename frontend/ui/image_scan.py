@@ -16,6 +16,7 @@ VISION_API_KEY = os.getenv("VISION_API_KEY")
 # loading from parent directory explicitly
 if not VISION_API_KEY:
     from dotenv import load_dotenv
+
     load_dotenv(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".env")))
     VISION_API_KEY = os.getenv("VISION_API_KEY")
 
@@ -39,7 +40,11 @@ def handle_image_scan() -> None:
     # call the Vision API
     encoded_image = base64.b64encode(file_bytes).decode()
     url = f"https://vision.googleapis.com/v1/images:annotate?key={VISION_API_KEY}"
-    body = {"requests": [{"image": {"content": encoded_image}, "features": [{"type": "LABEL_DETECTION"}]}]}
+    body = {
+        "requests": [
+            {"image": {"content": encoded_image}, "features": [{"type": "LABEL_DETECTION"}]}
+        ]
+    }
     response = requests.post(url, json=body)
     if response.status_code != 200:
         st.error(f"Vision API request failed ({response.status_code})")
@@ -60,7 +65,7 @@ def handle_image_scan() -> None:
     if manual.strip():
         # if user typed something, give it priority over detection
         selected_food = manual.strip()
-    
+
     if not selected_food:
         # nothing chosen yet, and manual is empty; keep a placeholder for adding
         selected_food = ""
@@ -85,7 +90,15 @@ def handle_image_scan() -> None:
         # ensure matches one of the options (case-insensitive)
         if default_cat not in CATEGORY_OPTIONS:
             default_cat = "Other"
-    category = st.selectbox("Category", CATEGORY_OPTIONS, index=CATEGORY_OPTIONS.index(default_cat) if default_cat in CATEGORY_OPTIONS else CATEGORY_OPTIONS.index("Other"))
+    category = st.selectbox(
+        "Category",
+        CATEGORY_OPTIONS,
+        index=(
+            CATEGORY_OPTIONS.index(default_cat)
+            if default_cat in CATEGORY_OPTIONS
+            else CATEGORY_OPTIONS.index("Other")
+        ),
+    )
 
     if st.button("Add to inventory"):
         if not selected_food:

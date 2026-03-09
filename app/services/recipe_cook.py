@@ -43,6 +43,7 @@ def normalize_ingredient_name(name: str) -> str:
 
     return name
 
+
 def normalize_unit(unit: str) -> str:
     UNIT_CONVERSIONS = {
         "cup": "g",
@@ -54,7 +55,7 @@ def normalize_unit(unit: str) -> str:
         "clove": "pieces",
         "cloves": "pieces",
     }
-    
+
     unit = unit.lower().strip()
 
     allowed = {"pieces", "ml", "l", "g", "kg"}
@@ -66,6 +67,7 @@ def normalize_unit(unit: str) -> str:
         return UNIT_CONVERSIONS[unit]
 
     return "pieces"
+
 
 def parse_ingredient_line(line: str) -> dict:
     """
@@ -133,11 +135,7 @@ def find_matching_item(db, household_id: int, ingredient_name: str):
     Find a matching household item using normalized name comparison.
     Handles case-insensitive matching and simple plural normalization.
     """
-    items = (
-        db.query(Item)
-        .filter(Item.household_id == household_id)
-        .all()
-    )
+    items = db.query(Item).filter(Item.household_id == household_id).all()
     normalized_target = normalize_ingredient_name(ingredient_name)
 
     for item in items:

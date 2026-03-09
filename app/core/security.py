@@ -52,10 +52,7 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    to_encode.update({
-        "exp": expire,
-        "type": "access"
-    })
+    to_encode.update({"exp": expire, "type": "access"})
 
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
@@ -70,10 +67,7 @@ def create_refresh_token(data: Dict[str, Any]) -> str:
 
     expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
 
-    to_encode.update({
-        "exp": expire,
-        "type": "refresh"
-    })
+    to_encode.update({"exp": expire, "type": "refresh"})
 
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
@@ -104,10 +98,7 @@ def decode_refresh_token(token: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
-):
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """Get the current authenticated user from the JWT token in HTTP-only cookie.
 
     The token is automatically extracted from the access_token cookie
@@ -120,7 +111,7 @@ async def get_current_user(
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     user_id: str = payload.get("sub")
     if user_id is None:
         raise HTTPException(
@@ -128,9 +119,9 @@ async def get_current_user(
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     from app.models import User
-    
+
     user = db.query(User).filter(User.id == int(user_id)).first()
     if user is None:
         raise HTTPException(
@@ -138,11 +129,8 @@ async def get_current_user(
             detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Inactive user"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
+
     return user

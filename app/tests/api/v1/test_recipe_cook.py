@@ -54,7 +54,7 @@ def test_cook_recipe_success_deducts_quantity(db, create_test_user, egg_item):
         "title": "Scrambled Eggs",
         "ingredients": ["2 egg"],
         "missing_ingredients": [],
-        "steps": ["Cook eggs"]
+        "steps": ["Cook eggs"],
     }
 
     cook_recipe(db, create_test_user.household_id, recipe)
@@ -69,7 +69,7 @@ def test_cook_recipe_creates_usage_log(db, create_test_user, egg_item):
         "title": "Scrambled Eggs",
         "ingredients": ["2 egg"],
         "missing_ingredients": [],
-        "steps": ["Cook eggs"]
+        "steps": ["Cook eggs"],
     }
 
     cook_recipe(db, create_test_user.household_id, recipe)
@@ -89,7 +89,7 @@ def test_cook_recipe_insufficient_quantity_raises(db, create_test_user, egg_item
         "title": "Scrambled Eggs",
         "ingredients": ["2 egg"],
         "missing_ingredients": [],
-        "steps": ["Cook eggs"]
+        "steps": ["Cook eggs"],
     }
 
     with pytest.raises(ValueError):
@@ -101,7 +101,7 @@ def test_no_partial_deduction_on_failure(db, create_test_user, egg_item, rice_it
         "title": "Egg Rice",
         "ingredients": ["2 egg", "999 rice"],
         "missing_ingredients": [],
-        "steps": ["Cook"]
+        "steps": ["Cook"],
     }
 
     with pytest.raises(ValueError):
@@ -114,6 +114,7 @@ def test_no_partial_deduction_on_failure(db, create_test_user, egg_item, rice_it
     assert rice_item.quantity == 2
     assert db.query(ItemUsageLog).count() == 0
 
+
 def test_cook_recipe_missing_item_raises(db, create_test_user, egg_item):
     recipe = {
         "title": "Egg Garlic Fry",
@@ -125,9 +126,11 @@ def test_cook_recipe_missing_item_raises(db, create_test_user, egg_item):
     with pytest.raises(ValueError, match="Item not found"):
         cook_recipe(db, create_test_user.household_id, recipe)
 
+
 def test_parse_ingredient_line_invalid_raises():
     with pytest.raises(ValueError, match="Invalid ingredient format"):
         parse_ingredient_line("egg")
+
 
 # -------------------------
 # API endpoint test
@@ -138,7 +141,7 @@ def test_cook_recipe_endpoint(auth_client, db, create_test_user, egg_item):
         "title": "Scrambled Eggs",
         "ingredients": ["2 egg"],
         "missing_ingredients": [],
-        "steps": ["Cook eggs"]
+        "steps": ["Cook eggs"],
     }
 
     response = auth_client.post("/api/v1/recipes/cook", json=payload)
@@ -148,14 +151,17 @@ def test_cook_recipe_endpoint(auth_client, db, create_test_user, egg_item):
     db.refresh(egg_item)
     assert egg_item.quantity == 4
 
+
 def test_parse_ingredient_line_accepts_decimal_whole_number():
     result = parse_ingredient_line("11.0 pieces of Eggs")
     assert result["quantity"] == 11
     assert result["name"] == "egg"
 
+
 def test_parse_ingredient_line_rejects_fractional_quantity():
     with pytest.raises(ValueError, match="whole number"):
         parse_ingredient_line("1.5 eggs")
+
 
 def test_cook_recipe_matches_case_insensitively(db, create_test_user):
     item = Item(
@@ -174,7 +180,7 @@ def test_cook_recipe_matches_case_insensitively(db, create_test_user):
         "title": "Scrambled Eggs",
         "ingredients": ["2 eggs"],
         "missing_ingredients": [],
-        "steps": ["Cook eggs"]
+        "steps": ["Cook eggs"],
     }
 
     cook_recipe(db, create_test_user.household_id, recipe)

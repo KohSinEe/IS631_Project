@@ -1,4 +1,3 @@
-
 from typing import Optional, Any, Dict
 import streamlit as st
 from services.client import APIError, api_request, get_api_client
@@ -7,7 +6,11 @@ from config.settings import ALLERGEN_OPTIONS
 
 
 def register_user(
-    email: str, password: str, password_confirm: str, name: Optional[str], household_name: Optional[str]
+    email: str,
+    password: str,
+    password_confirm: str,
+    name: Optional[str],
+    household_name: Optional[str],
 ) -> Dict[str, Any]:
     payload = {
         "email": email,
@@ -74,7 +77,9 @@ def reset_password(email: str, new_password: str) -> None:
     try:
         response = api_request("post", "/users/reset-password", json=payload)
         print(f"Password reset response: {response}")
-        if not response or (isinstance(response, dict) and response.get("message") != "Password reset successful"):
+        if not response or (
+            isinstance(response, dict) and response.get("message") != "Password reset successful"
+        ):
             st.error("Password reset failed. Please check your email and try again.")
         else:
             st.success("Password reset successful. Please sign in.")
@@ -96,15 +101,19 @@ def delete_household(household_id: int) -> None:
         st.session_state.user["household_id"] = None
         st.session_state.user["is_household_owner"] = False
 
+
 # Allergens related:
+
 
 def get_my_allergens() -> list:
     result = api_request("get", "/users/me/allergens")
     return result.get("allergens", []) if isinstance(result, dict) else []
 
+
 def add_allergens(allergens: list) -> list:
     result = api_request("post", "/users/me/allergens", json={"allergens": allergens})
     return result.get("allergens", []) if isinstance(result, dict) else []
+
 
 def delete_allergens(allergens: list) -> list:
     result = api_request("delete", "/users/me/allergens", json={"allergens": allergens})
