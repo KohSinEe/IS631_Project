@@ -23,3 +23,9 @@ class RecipeGenerateRequest(BaseModel):
 
 class RecipeGenerateResponse(BaseModel):
     recipes: List[Recipe]
+
+class CookRecipeRequest(BaseModel):
+    title: str
+    ingredients: List[str]
+    missing_ingredients: List[str] = []
+    steps: List[str]
