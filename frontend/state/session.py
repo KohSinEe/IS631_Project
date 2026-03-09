@@ -11,6 +11,15 @@ SESSION_DEFAULTS = {
     "sort_by_expiry": True,
     "detected_barcode": None,
     "detected_product_info": None,
+    # Public view: do not auto-open sign-in/sign-up dialogs after logout
+    "show_sign_in_form": False,
+    "show_sign_up_form": False,
+    "show_pw_reset": False,
+    # Dashboard dialogs: reset on logout so profile doesn't open on next login
+    "show_profile_dialog": False,
+    "show_logout_dialog": False,
+    "show_invite_dialog": False,
+    "show_delete_fridge_dialog": False,
     # Form keys
     "login_email": "",
     "login_password": "",
