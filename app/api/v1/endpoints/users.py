@@ -7,7 +7,6 @@ from app.schemas.user import UserResponse, UserUpdate, PasswordChange, PasswordR
 from app.core.security import verify_password, get_password_hash
 from app.models.user import User
 
-
 router = APIRouter()
 
 

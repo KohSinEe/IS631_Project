@@ -11,7 +11,6 @@ from app.models.enums import InvitationStatusEnum
 from app.models.user import User
 from app.schemas.invitation import InviteCreate, InvitationResponse, HouseholdMemberResponse
 
-
 router = APIRouter()
 
 

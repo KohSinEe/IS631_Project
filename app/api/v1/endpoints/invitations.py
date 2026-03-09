@@ -10,7 +10,6 @@ from app.models.invitation import Invitation
 from app.models.user import User
 from app.schemas.invitation import InvitationListForUser
 
-
 router = APIRouter()
 
 

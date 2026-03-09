@@ -12,7 +12,6 @@ from app.services.recipe_gen import (
     generate_recipes,
 )
 
-
 # ----- _normalize_items -----
 
 
