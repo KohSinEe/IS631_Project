@@ -147,3 +147,37 @@ def test_cook_recipe_endpoint(auth_client, db, create_test_user, egg_item):
 
     db.refresh(egg_item)
     assert egg_item.quantity == 4
+
+def test_parse_ingredient_line_accepts_decimal_whole_number():
+    result = parse_ingredient_line("11.0 pieces of Eggs")
+    assert result["quantity"] == 11
+    assert result["name"] == "egg"
+
+def test_parse_ingredient_line_rejects_fractional_quantity():
+    with pytest.raises(ValueError, match="whole number"):
+        parse_ingredient_line("1.5 eggs")
+
+def test_cook_recipe_matches_case_insensitively(db, create_test_user):
+    item = Item(
+        name="Egg",
+        quantity=6,
+        unit=UnitEnum.PIECES,
+        category=CategoryEnum.OTHER,
+        expiry_date="2026-01-01",
+        household_id=create_test_user.household_id,
+    )
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+
+    recipe = {
+        "title": "Scrambled Eggs",
+        "ingredients": ["2 eggs"],
+        "missing_ingredients": [],
+        "steps": ["Cook eggs"]
+    }
+
+    cook_recipe(db, create_test_user.household_id, recipe)
+
+    db.refresh(item)
+    assert item.quantity == 4

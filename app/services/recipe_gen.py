@@ -26,11 +26,19 @@ class RecipeResponse(BaseModel):
 def _normalize_items(items: List[Dict[str, Any]]) -> List[str]:
     norm: List[str] = []
     for it in items:
-        name = str(it.get("name", "")).strip()
+        name = str(it.get("name", "")).strip().lower()
         if not name:
             continue
+
+        if name.endswith("s") and len(name) > 3 and not name.endswith("ss"):
+            name = name[:-1]
+
         qty = it.get("quantity", None)
-        unit = str(it.get("unit", "")).strip()
+        unit = str(it.get("unit", "")).strip().lower()
+
+        if isinstance(qty, float) and qty.is_integer():
+            qty = int(qty)
+
         if qty is None or qty == "":
             norm.append(name)
         else:
@@ -47,6 +55,8 @@ def _build_prompt(
     allergens: Optional[List[str]] = None,
 ) -> str:
 
+    ALLOWED_UNITS = ["pieces", "ml", "l", "g", "kg"]
+
     prefs_text = (
         f"\nUser preferences (optional): {json.dumps(preferences)}\n" if preferences else ""
     )
@@ -61,6 +71,13 @@ def _build_prompt(
         "- Output must match the schema shown.",
         f"- Provide {max_recipes} recipes.",
         "- Maximise the use of ingredients available in the fridge. These should appear under 'ingredients'.",
+        "- Use only whole-number quantities in 'ingredients'. Do not use decimals like 11.0.",
+        "- Format every ingredient as '<whole number> <ingredient name>' or '<whole number> <unit> <ingredient name>'.",
+        "- Do not use vague phrases like 'to taste', 'some', or fractions like '1/2'.",
+        f"- Allowed measurement units are ONLY: {', '.join(ALLOWED_UNITS)}.",
+        "- Do not use any other units such as cups, tbsp, tsp, cloves, slices, or pinches.",
+        "- If an ingredient does not require measurement, use 'pieces'.",
+        "- Ingredient names must match pantry items closely. Do not add preparation words like chopped, diced, scrambled, minced, or sliced.",
     ]
     if inventory_only:
         rules += [
@@ -95,16 +112,24 @@ def _build_prompt(
         ]
     }
 
-    print(
-        "You are a helpful cooking assistant.\n"
-        "Given the following pantry items, generate practical home-cooking recipes.\n"
-        f"Pantry items: {pantry_lines}\n"
-        f"{allergen_text}"
-        f"{prefs_text}\n"
-        "JSON schema (example shape):\n"
-        f"{json.dumps(schema, indent=2)}\n\n"
-        "Rules:\n" + "\n".join(rules) + "\n\nReturn JSON only."
-    )
+    example_output = {
+        "recipes": [
+            {
+                "title": "Simple Egg Dish",
+                "time_minutes": 10,
+                "ingredients": [
+                    "2 pieces egg",
+                    "50 g rice"
+                ],
+                "missing_ingredients": [],
+                "steps": [
+                    "Beat the eggs.",
+                    "Cook them in a pan."
+                ],
+                "reason": "Uses available pantry items."
+            }
+        ]
+    }
 
     return (
         "You are a helpful cooking assistant.\n"
@@ -114,6 +139,8 @@ def _build_prompt(
         f"{prefs_text}\n"
         "JSON schema (example shape):\n"
         f"{json.dumps(schema, indent=2)}\n\n"
+        "Example valid output:\n"
+        f"{json.dumps(example_output, indent=2)}\n\n"
         "Rules:\n" + "\n".join(rules) + "\n\nReturn JSON only."
     )
 
