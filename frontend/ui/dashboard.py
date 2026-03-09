@@ -77,7 +77,9 @@ def profile_dialog() -> None:
         if "show_allergen_edit" not in st.session_state:
             st.session_state.show_allergen_edit = False
 
-        if st.button("Edit My Allergens", key="profile_edit_allergens_btn", use_container_width=True):
+        if st.button(
+            "Edit My Allergens", key="profile_edit_allergens_btn", use_container_width=True
+        ):
             st.session_state.show_allergen_edit = not st.session_state.show_allergen_edit
 
         if st.session_state.show_allergen_edit:
@@ -144,7 +146,9 @@ def profile_dialog() -> None:
                         allergens = entry.get("allergens", [])
                         if allergens:
                             has_any = True
-                            name = member_map.get(entry.get("user_id"), f"User {entry.get('user_id')}")
+                            name = member_map.get(
+                                entry.get("user_id"), f"User {entry.get('user_id')}"
+                            )
                             st.write(f"**{name.title()}**: {', '.join(allergens)}")
                     if not has_any:
                         st.info("No household members have allergens set.")
@@ -152,6 +156,7 @@ def profile_dialog() -> None:
                 st.error(f"Failed to load household allergens: {str(e)}")
         else:
             st.warning("You do not have the authority to see household allergens.")
+
 
 @st.dialog("Logout")
 def logout_dialog() -> None:
@@ -176,7 +181,9 @@ def invite_user_dialog(household_id: int) -> None:
     # Show success + OK when we just sent an invite (so user can acknowledge)
     if st.session_state.get("invite_sent_to"):
         email = st.session_state.invite_sent_to
-        st.success(f"Invitation sent to **{email}**. They can accept or decline from their dashboard.")
+        st.success(
+            f"Invitation sent to **{email}**. They can accept or decline from their dashboard."
+        )
         if st.button("OK", type="primary", use_container_width=True):
             st.session_state.invite_sent_to = None
             st.session_state.show_invite_dialog = False
@@ -287,13 +294,17 @@ def render_header() -> None:
             if (
                 user.get("household_id")
                 and user.get("is_household_owner")
-                and st.button("Delete fridge", key="header_delete_fridge_btn", use_container_width=True)
+                and st.button(
+                    "Delete fridge", key="header_delete_fridge_btn", use_container_width=True
+                )
             ):
                 st.session_state.show_delete_fridge_dialog = True
                 st.session_state.show_profile_dialog = False
                 st.session_state.show_invite_dialog = False
                 st.session_state.show_logout_dialog = False
-            if st.button("Sign out", key="header_signout_btn", type="secondary", use_container_width=True):
+            if st.button(
+                "Sign out", key="header_signout_btn", type="secondary", use_container_width=True
+            ):
                 st.session_state.show_logout_dialog = True
                 st.session_state.show_profile_dialog = False
                 st.session_state.show_invite_dialog = False
@@ -417,6 +428,7 @@ def add_item_dialog() -> None:
         handle_barcode_scan()
     with tab3:
         from ui.image_scan import handle_image_scan
+
         handle_image_scan()
 
 
@@ -484,11 +496,15 @@ def render_dashboard() -> None:
             inv_id = inv.get("id")
             if inv_id is None:
                 continue
-            st.write(f"**{inv.get('household_name', 'Fridge')}** — {inviter} invited you as **{role_label}**.")
+            st.write(
+                f"**{inv.get('household_name', 'Fridge')}** — {inviter} invited you as **{role_label}**."
+            )
             col1, col2, _ = st.columns([1, 1, 4])
             with col1:
                 if st.button("Accept", key=f"accept_inv_{inv_id}"):
-                    st.session_state.show_invite_dialog = False  # Avoid opening "Invite to fridge" after accept
+                    st.session_state.show_invite_dialog = (
+                        False  # Avoid opening "Invite to fridge" after accept
+                    )
                     try:
                         accept_invitation(inv_id)
                         get_current_user()
@@ -581,7 +597,6 @@ def render_dashboard() -> None:
             if st.session_state.show_edit_item_dialog and not dialog_opened_this_run:
                 edit_item_dialog(st.session_state.filtered_inventory)
 
-
     st.divider()
 
     st.markdown("### Help Me Generate A Recipe")
@@ -590,7 +605,7 @@ def render_dashboard() -> None:
         "Consider ingredients outside my fridge",
         value=False,
         key="inventory_only_toggle",
-        help="When on, the AI may suggest recipes that need extra ingredients not in your fridge."
+        help="When on, the AI may suggest recipes that need extra ingredients not in your fridge.",
     )
     st.session_state.inventory_only = inventory_only
 
@@ -608,6 +623,6 @@ def render_dashboard() -> None:
         st.session_state.use_household_allergens = False
 
     if st.button("✨ Generate Recipe ✨", use_container_width=True):
-            st.session_state.page = "recipe"
+        st.session_state.page = "recipe"
 
     ensure_inventory_loaded()

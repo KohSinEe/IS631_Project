@@ -1,7 +1,8 @@
 import os
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.dependencies import DatabaseDep, CurrentUserDep
-from app.schemas.recipes import RecipeGenerateRequest, RecipeGenerateResponse
+from app.schemas.recipes import RecipeGenerateRequest, RecipeGenerateResponse, CookRecipeRequest
+from app.services.recipe_cook import cook_recipe
 from app.models.user import User
 from app.models.user_allergen import UserAllergen
 from app.services.recipe_gen import generate_recipes
@@ -44,4 +45,30 @@ async def generate(req: RecipeGenerateRequest, current_user: CurrentUserDep, db:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=msg,
+        )
+
+
+@router.post("/cook")
+def cook(
+    req: CookRecipeRequest,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+):
+    if current_user.household_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is not assigned to a household.",
+        )
+
+    try:
+        result = cook_recipe(
+            db=db,
+            household_id=current_user.household_id,
+            recipe=req.model_dump(),
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
         )

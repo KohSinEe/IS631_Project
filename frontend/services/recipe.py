@@ -15,3 +15,11 @@ def generate_recipe(items, max_recipes, inventory_only, preferences, use_househo
         return recipes
     except APIError:
         raise
+
+
+def cook_recipe(recipe):
+    try:
+        result = api_request("post", "/recipes/cook", json=recipe, timeout=30)
+        return result
+    except APIError:
+        raise

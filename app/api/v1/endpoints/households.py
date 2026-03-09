@@ -11,7 +11,6 @@ from app.models.enums import InvitationStatusEnum
 from app.models.user import User
 from app.schemas.invitation import InviteCreate, InvitationResponse, HouseholdMemberResponse
 
-
 router = APIRouter()
 
 
@@ -81,7 +80,11 @@ def _ensure_owner_and_household(
     return household
 
 
-@router.post("/{household_id}/invites", response_model=InvitationResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{household_id}/invites",
+    response_model=InvitationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 def create_invitation(
     household_id: int,
     body: InviteCreate,

@@ -17,7 +17,9 @@ class Invitation(Base):
     inviter_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     invitee_email = Column(String(255), nullable=False, index=True)
     role = Column(Enum(HouseholdRoleEnum), nullable=False)
-    status = Column(Enum(InvitationStatusEnum), nullable=False, default=InvitationStatusEnum.PENDING)
+    status = Column(
+        Enum(InvitationStatusEnum), nullable=False, default=InvitationStatusEnum.PENDING
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     household = relationship("Household", backref="invitations")

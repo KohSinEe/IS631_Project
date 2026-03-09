@@ -77,3 +77,41 @@ Sample request input if testing through swagger ui/terminal:
   "max_recipes": 2
 }
 ```
+## Recipe Cooking & Inventory Auto-Deduction
+
+FridgeBuddy allows users to cook AI-generated recipes and automatically update household inventory.
+
+When a recipe is cooked, the system:
+
+- Parses the ingredient list from the generated recipe
+- Normalizes ingredient names for matching with fridge items
+- Validates that sufficient quantities exist in the inventory
+- Deducts the used quantities from the household fridge
+- Records ingredient usage in the `item_usage_logs` table
+
+This ensures that the household inventory remains accurate after recipes are prepared.
+
+### Example
+
+Before cooking:
+
+```text
+Eggs: 6 pieces
+Butter: 100 g
+```
+
+Recipe ingredients:
+
+```text
+4 pieces egg
+30 g butter
+```
+
+After cooking:
+
+```text
+Eggs: 2 pieces
+Butter: 70 g
+```
+
+Ingredient usage is also logged for tracking consumption.

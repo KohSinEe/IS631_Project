@@ -16,7 +16,6 @@ from app.schemas.item import (
 )
 from app.schemas.recipes import PantryItem, Recipe, RecipeGenerateRequest, RecipeGenerateResponse
 
-
 # ----- User schemas -----
 
 

@@ -48,9 +48,8 @@ def get_usage_summary(
         query = query.filter(ItemUsageLog.consumed_at >= from_dt)
 
     if to_date:
-        to_dt = (
-            datetime(to_date.year, to_date.month, to_date.day, tzinfo=timezone.utc)
-            + timedelta(days=1)
+        to_dt = datetime(to_date.year, to_date.month, to_date.day, tzinfo=timezone.utc) + timedelta(
+            days=1
         )
         query = query.filter(ItemUsageLog.consumed_at < to_dt)
 
@@ -68,7 +67,9 @@ def get_usage_summary(
 
     sorted_logs = sorted(logs, key=lambda x: x.total_consumed, reverse=True)
     most_used = sorted_logs[:3]
-    least_used = list(reversed(sorted_logs[-3:])) if len(sorted_logs) >= 3 else list(reversed(sorted_logs))
+    least_used = (
+        list(reversed(sorted_logs[-3:])) if len(sorted_logs) >= 3 else list(reversed(sorted_logs))
+    )
 
     return UsageSummaryResponse(
         logs=sorted_logs,

@@ -14,11 +14,7 @@ def get_household_allergens(current_user: CurrentUserDep, db: DatabaseDep):
     if current_user.household_id is None:
         raise HTTPException(status_code=403, detail="You are not part of a household")
 
-    members = (
-        db.query(User)
-        .filter(User.household_id == current_user.household_id)
-        .all()
-    )
+    members = db.query(User).filter(User.household_id == current_user.household_id).all()
 
     return [
         UserAllergenResponse(
