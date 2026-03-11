@@ -260,13 +260,16 @@ def render_header() -> None:
     if "show_invite_dialog" not in st.session_state:
         st.session_state.show_invite_dialog = False
 
-    header_left, header_right = st.columns([10, 1])
+    header_left, header_right = st.columns([8, 2])
 
     with header_left:
+        name = user.get("name") or user.get("email") or "there"
         st.markdown(
             f"""
-            <h1>Welcome back, {user.get('name') or user.get('email')}</h1>
-            <h3>Your fridge at a glance...</h3>
+            <div class="dashboard-welcome">
+            <h1>Welcome back, {name}</h1>
+            <h3>Your fridge at a glance</h3>
+            </div>
             """,
             unsafe_allow_html=True,
         )

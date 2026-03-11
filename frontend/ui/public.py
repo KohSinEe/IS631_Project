@@ -78,12 +78,13 @@ def render_public_view() -> None:
     if "sign_in_form_data" not in st.session_state:
         st.session_state.sign_in_form_data = {"email": "", "password": ""}
 
-    st.markdown("<h1 style='text-align: center;'>FridgeBuddy</h1>", unsafe_allow_html=True)
     st.markdown(
-        "<h4 style='text-align: center;'>Stop guessing. Start managing.</h4>",
+        "<div class='landing-hero'>"
+        "<h1>🥕 FridgeBuddy</h1>"
+        "<p class='landing-tagline'>Stop guessing. Start managing.</p>"
+        "</div>",
         unsafe_allow_html=True,
     )
-
     st.markdown("<br>", unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([2, 3, 2])
