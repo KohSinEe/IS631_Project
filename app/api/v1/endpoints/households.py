@@ -10,6 +10,8 @@ from app.models.invitation import Invitation
 from app.models.enums import InvitationStatusEnum
 from app.models.user import User
 from app.schemas.invitation import InviteCreate, InvitationResponse, HouseholdMemberResponse
+from app.schemas.household import HouseholdCreate, HouseholdResponse
+
 
 router = APIRouter()
 
@@ -195,3 +197,32 @@ def list_household_members(
             )
         )
     return result
+
+@router.post("", response_model=HouseholdResponse, status_code=status.HTTP_201_CREATED)
+def create_household(
+    body: HouseholdCreate,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+):
+    """
+    Create a new household and set the current user as owner.
+    Only allowed if the user does not already belong to a household.
+    """
+    if current_user.household_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You already belong to a household",
+        )
+
+    household = Household(name=body.name)
+    db.add(household)
+    db.flush()  # get household.id
+
+    current_user.household_id = household.id
+    household.owner_id = current_user.id
+
+    db.commit()
+    db.refresh(current_user)
+    db.refresh(household)
+
+    return household
