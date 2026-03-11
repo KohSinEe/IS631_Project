@@ -11,6 +11,7 @@ SESSION_DEFAULTS = {
     "sort_by_expiry": True,
     "detected_barcode": None,
     "detected_product_info": None,
+    "expiry_toasts_shown": False,
     # Public view: do not auto-open sign-in/sign-up dialogs after logout
     "show_sign_in_form": False,
     "show_sign_up_form": False,

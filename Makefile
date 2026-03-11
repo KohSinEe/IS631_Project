@@ -42,12 +42,12 @@ run:
 	@uv run uvicorn app.main:app --reload --port 8000
 
 run-streamlit:
-	streamlit run frontend/app.py
+	@uv run streamlit run frontend/app.py
 
 run-all:
 	@echo "Starting FastAPI and Streamlit..."
 	(uv run uvicorn app.main:app --reload --port 8000 &)
-	streamlit run frontend/app.py
+	(uv run streamlit run frontend/app.py)
 
 migrate:
 	@uv run alembic upgrade head
@@ -63,9 +63,6 @@ format:
 	@uv run black app/
 	@uv run isort app/
 
-st:
-	@uv run streamlit run frontend/app.py
-  
 test:
 	@uv run pytest --cov=app/api --cov-report=term
 
@@ -77,3 +74,7 @@ clean:
 	@rm -rf .pytest_cache dist build *.egg-info uv.lock
 	@echo "✅ Cleanup complete"
 
+stop:
+	pkill -f "uvicorn app.main:app" || true
+	pkill -f "streamlit run frontend/app.py" || true
+	@echo "Backend and Streamlit processes killed."

@@ -17,6 +17,7 @@ from ui.dashboard import render_dashboard, ensure_inventory_loaded
 from ui.recipe import handle_generate_recipe
 from ui.stocktake import render_stocktake
 from ui.usage import render_usage_overview
+from utils.inventory import show_expiry_notifications
 
 
 def main() -> None:
@@ -28,14 +29,15 @@ def main() -> None:
     init_session_state()
 
     if st.session_state.is_authenticated:
+        ensure_inventory_loaded()
+        show_expiry_notifications(st.session_state.inventory)
+
         if st.session_state.page == "dashboard":
             st.session_state.category_filter = "All"
-            ensure_inventory_loaded()
             render_dashboard()
         elif st.session_state.page == "recipe":
             handle_generate_recipe()
         elif st.session_state.page == "stocktake":
-            ensure_inventory_loaded()
             render_stocktake()
         elif st.session_state.page == "usage":
             render_usage_overview()

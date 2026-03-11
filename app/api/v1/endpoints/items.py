@@ -10,6 +10,7 @@ from app.models import Item
 from app.models.usage_log import ItemUsageLog
 from app.schemas.item import ItemCreate, ItemUpdate, ItemResponse, ItemQuantityChange, Category
 from app.core.security import get_current_user
+from app.utils.expiry import get_default_expiry_for_category
 
 router = APIRouter()
 
@@ -93,7 +94,7 @@ def create_item(
         name=item.name,
         quantity=item.quantity,
         unit=item.unit,
-        expiry_date=item.expiry_date.isoformat(),
+        expiry_date=(item.expiry_date or get_default_expiry_for_category(item.category.value)).isoformat(),
         category=item.category,
         household_id=household_id,
     )

@@ -130,6 +130,12 @@ def test_item_create_quantity_negative() -> None:
         )
 
 
+def test_item_create_without_expiry_date() -> None:
+    """ItemCreate accepts a missing expiry_date (auto-filled by the backend from category)."""
+    item = ItemCreate(name="Steak", quantity=1, unit=UnitType.PIECES, category=Category.MEAT)
+    assert item.expiry_date is None
+
+
 def test_item_create_expiry_in_past() -> None:
     """ItemCreate rejects expiry_date in the past."""
     past = (date.today() - timedelta(days=1)).isoformat()

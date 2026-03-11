@@ -43,15 +43,15 @@ class ItemBase(BaseModel):
     @field_validator("expiry_date")
     @classmethod
     def validate_expiry_date(cls, v):
-        if v < date.today():
+        if v is not None and v < date.today():
             raise ValueError("Expiry date cannot be in the past")
         return v
 
 
 class ItemCreate(ItemBase):
-    """Schema for creating a new item."""
+    """Schema for creating a new item. expiry_date is optional and auto-filled if blank."""
 
-    pass
+    expiry_date: Optional[date] = Field(None, description="Expiry date; auto-estimated from category if not provided")
 
 
 class ItemUpdate(BaseModel):

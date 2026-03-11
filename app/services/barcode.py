@@ -59,30 +59,20 @@ class BarcodeService:
         return None
 
     @staticmethod
-    def estimate_expiry_date(product: BarcodeProduct) -> Optional[str]:
+    async def estimate_expiry_date(product: BarcodeProduct) -> Optional[str]:
         """
         Try to estimate expiry date based on product category.
         This is a fallback if user doesn't provide explicit date.
         """
-        from datetime import date, timedelta
+        from app.utils.expiry import get_default_expiry_for_category, CATEGORY_DEFAULT_EXPIRY_DAYS
 
-        category = (product.category or "").lower()
-        days_to_expiry = 30  # Default
+        raw_category = (product.category or "").lower()
+        matched_category = next(
+            (cat for cat in CATEGORY_DEFAULT_EXPIRY_DAYS if cat.lower() in raw_category),
+            "Other",
+        )
+        return get_default_expiry_for_category(matched_category).isoformat()
 
-        # Rough estimates based on category
-        if "dairy" in category:
-            days_to_expiry = 14
-        elif "meat" in category or "fish" in category:
-            days_to_expiry = 3
-        elif "fresh" in category or "vegetable" in category or "fruit" in category:
-            days_to_expiry = 7
-        elif "beverage" in category:
-            days_to_expiry = 365
-        elif "frozen" in category:
-            days_to_expiry = 180
-
-        expiry_date = date.today() + timedelta(days=days_to_expiry)
-        return expiry_date.isoformat()
 
 
 # Singleton instance

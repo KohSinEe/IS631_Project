@@ -55,7 +55,7 @@ async def lookup_barcode(
         category=product.category or "Other",
         brand=product.brand,
         image_url=product.image_url,
-        suggested_expiry_days=barcode_service.estimate_expiry_date(product),
+        suggested_expiry_days=await barcode_service.estimate_expiry_date(product),
     )
 
 
@@ -112,7 +112,7 @@ async def add_item_from_barcode(
 
     # Determine expiry date
     if not expiry_date:
-        expiry_date_str = barcode_service.estimate_expiry_date(product)
+        expiry_date_str = await barcode_service.estimate_expiry_date(product)
         expiry_date = date.fromisoformat(expiry_date_str)
 
     # Map product category to app categories
