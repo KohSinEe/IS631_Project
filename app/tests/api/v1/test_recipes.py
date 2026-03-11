@@ -46,7 +46,9 @@ def test_recipes_generate_success(mock_generate: AsyncMock, auth_client: TestCli
 
 
 @patch("app.api.v1.endpoints.recipes.generate_recipes", new_callable=AsyncMock)
-def test_recipes_generate_calls_with_params(mock_generate: AsyncMock, auth_client: TestClient) -> None:
+def test_recipes_generate_calls_with_params(
+    mock_generate: AsyncMock, auth_client: TestClient
+) -> None:
     """Generate is called with request params and defaults."""
     mock_generate.return_value = FAKE_RECIPE_RESPONSE
 

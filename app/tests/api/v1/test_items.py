@@ -74,10 +74,21 @@ def test_list_items_filter_by_category(auth_client: TestClient, create_test_user
     # tests that the API returns a 200 status code and the correct number of items filtered by category
     household_id = create_test_user.household_id
     for name, cat in [("Milk", CategoryEnum.DAIRY), ("Apple", CategoryEnum.FRUITS)]:
-        db.add(Item(name=name, quantity=1, unit=UnitEnum.PIECES, expiry_date="2026-05-01", category=cat, household_id=household_id))
+        db.add(
+            Item(
+                name=name,
+                quantity=1,
+                unit=UnitEnum.PIECES,
+                expiry_date="2026-05-01",
+                category=cat,
+                household_id=household_id,
+            )
+        )
     db.commit()
 
-    r = auth_client.get(f"{settings.API_V1_STR}/items", params={"household_id": household_id, "category": "Dairy"})
+    r = auth_client.get(
+        f"{settings.API_V1_STR}/items", params={"household_id": household_id, "category": "Dairy"}
+    )
     assert r.status_code == 200
     data = r.json()
     assert len(data) == 1
@@ -88,10 +99,22 @@ def test_list_items_sort_by_expiry(auth_client: TestClient, create_test_user: Us
     # tests that the API returns a 200 status code and the correct number of items sorted by expiry date
     household_id = create_test_user.household_id
     for name, exp in [("First", "2026-06-01"), ("Second", "2026-05-01")]:
-        db.add(Item(name=name, quantity=1, unit=UnitEnum.PIECES, expiry_date=exp, category=CategoryEnum.OTHER, household_id=household_id))
+        db.add(
+            Item(
+                name=name,
+                quantity=1,
+                unit=UnitEnum.PIECES,
+                expiry_date=exp,
+                category=CategoryEnum.OTHER,
+                household_id=household_id,
+            )
+        )
     db.commit()
 
-    r = auth_client.get(f"{settings.API_V1_STR}/items", params={"household_id": household_id, "sort_by_expiry": True})
+    r = auth_client.get(
+        f"{settings.API_V1_STR}/items",
+        params={"household_id": household_id, "sort_by_expiry": True},
+    )
     assert r.status_code == 200
     data = r.json()
     assert len(data) == 2
@@ -152,12 +175,21 @@ def test_create_item_rejects_past_expiry(auth_client: TestClient, create_test_us
 def test_get_item(auth_client: TestClient, create_test_user: User, db) -> None:
     # tests that the API returns a 200 status code and the correct item data
     household_id = create_test_user.household_id
-    item = Item(name="Eggs", quantity=6, unit=UnitEnum.PIECES, expiry_date="2026-03-15", category=CategoryEnum.DAIRY, household_id=household_id)
+    item = Item(
+        name="Eggs",
+        quantity=6,
+        unit=UnitEnum.PIECES,
+        expiry_date="2026-03-15",
+        category=CategoryEnum.DAIRY,
+        household_id=household_id,
+    )
     db.add(item)
     db.commit()
     db.refresh(item)
 
-    r = auth_client.get(f"{settings.API_V1_STR}/items/{item.id}", params={"household_id": household_id})
+    r = auth_client.get(
+        f"{settings.API_V1_STR}/items/{item.id}", params={"household_id": household_id}
+    )
     assert r.status_code == 200
     assert r.json()["name"] == "Eggs"
     assert r.json()["quantity"] == 6
@@ -165,7 +197,9 @@ def test_get_item(auth_client: TestClient, create_test_user: User, db) -> None:
 
 def test_get_item_404(auth_client: TestClient, create_test_user: User) -> None:
     # tests that the API returns a 404 error if the item id is not found
-    r = auth_client.get(f"{settings.API_V1_STR}/items/99999", params={"household_id": create_test_user.household_id})
+    r = auth_client.get(
+        f"{settings.API_V1_STR}/items/99999", params={"household_id": create_test_user.household_id}
+    )
     assert r.status_code == 404
 
 
@@ -175,7 +209,14 @@ def test_get_item_403_other_household(auth_client: TestClient, create_test_user:
     db.add(other)
     db.commit()
     db.refresh(other)
-    item = Item(name="X", quantity=1, unit=UnitEnum.PIECES, expiry_date="2026-06-01", category=CategoryEnum.OTHER, household_id=other.id)
+    item = Item(
+        name="X",
+        quantity=1,
+        unit=UnitEnum.PIECES,
+        expiry_date="2026-06-01",
+        category=CategoryEnum.OTHER,
+        household_id=other.id,
+    )
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -190,7 +231,14 @@ def test_get_item_403_other_household(auth_client: TestClient, create_test_user:
 def test_update_item(auth_client: TestClient, create_test_user: User, db) -> None:
     # tests that the API returns a 200 status code and the correct item data
     household_id = create_test_user.household_id
-    item = Item(name="Old", quantity=1, unit=UnitEnum.PIECES, expiry_date="2026-04-01", category=CategoryEnum.OTHER, household_id=household_id)
+    item = Item(
+        name="Old",
+        quantity=1,
+        unit=UnitEnum.PIECES,
+        expiry_date="2026-04-01",
+        category=CategoryEnum.OTHER,
+        household_id=household_id,
+    )
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -222,21 +270,34 @@ def test_update_item_404(auth_client: TestClient, create_test_user: User) -> Non
 def test_delete_item(auth_client: TestClient, create_test_user: User, db) -> None:
     # tests that the API returns a 204 status code and the item is deleted
     household_id = create_test_user.household_id
-    item = Item(name="ToDelete", quantity=1, unit=UnitEnum.PIECES, expiry_date="2026-04-01", category=CategoryEnum.OTHER, household_id=household_id)
+    item = Item(
+        name="ToDelete",
+        quantity=1,
+        unit=UnitEnum.PIECES,
+        expiry_date="2026-04-01",
+        category=CategoryEnum.OTHER,
+        household_id=household_id,
+    )
     db.add(item)
     db.commit()
     db.refresh(item)
 
-    r = auth_client.delete(f"{settings.API_V1_STR}/items/{item.id}", params={"household_id": household_id})
+    r = auth_client.delete(
+        f"{settings.API_V1_STR}/items/{item.id}", params={"household_id": household_id}
+    )
     assert r.status_code == 204
 
-    r2 = auth_client.get(f"{settings.API_V1_STR}/items/{item.id}", params={"household_id": household_id})
+    r2 = auth_client.get(
+        f"{settings.API_V1_STR}/items/{item.id}", params={"household_id": household_id}
+    )
     assert r2.status_code == 404
 
 
 def test_delete_item_404(auth_client: TestClient, create_test_user: User) -> None:
     # tests that the API returns a 404 error if the item id is not found
-    r = auth_client.delete(f"{settings.API_V1_STR}/items/99999", params={"household_id": create_test_user.household_id})
+    r = auth_client.delete(
+        f"{settings.API_V1_STR}/items/99999", params={"household_id": create_test_user.household_id}
+    )
     assert r.status_code == 404
 
 
@@ -246,7 +307,14 @@ def test_delete_item_404(auth_client: TestClient, create_test_user: User) -> Non
 def test_adjust_quantity_increase(auth_client: TestClient, create_test_user: User, db) -> None:
     # tests that the API returns a 200 status code and the correct item data
     household_id = create_test_user.household_id
-    item = Item(name="Qty", quantity=10, unit=UnitEnum.PIECES, expiry_date="2026-04-01", category=CategoryEnum.OTHER, household_id=household_id)
+    item = Item(
+        name="Qty",
+        quantity=10,
+        unit=UnitEnum.PIECES,
+        expiry_date="2026-04-01",
+        category=CategoryEnum.OTHER,
+        household_id=household_id,
+    )
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -263,7 +331,14 @@ def test_adjust_quantity_increase(auth_client: TestClient, create_test_user: Use
 def test_adjust_quantity_decrease(auth_client: TestClient, create_test_user: User, db) -> None:
     # tests that the API returns a 200 status code and the correct item data
     household_id = create_test_user.household_id
-    item = Item(name="Qty", quantity=10, unit=UnitEnum.PIECES, expiry_date="2026-04-01", category=CategoryEnum.OTHER, household_id=household_id)
+    item = Item(
+        name="Qty",
+        quantity=10,
+        unit=UnitEnum.PIECES,
+        expiry_date="2026-04-01",
+        category=CategoryEnum.OTHER,
+        household_id=household_id,
+    )
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -280,7 +355,14 @@ def test_adjust_quantity_decrease(auth_client: TestClient, create_test_user: Use
 def test_adjust_quantity_rejects_negative_result(auth_client: TestClient, create_test_user: User, db) -> None:
     # tests that the API returns a 400 error if the quantity is negative
     household_id = create_test_user.household_id
-    item = Item(name="Qty", quantity=2, unit=UnitEnum.PIECES, expiry_date="2026-04-01", category=CategoryEnum.OTHER, household_id=household_id)
+    item = Item(
+        name="Qty",
+        quantity=2,
+        unit=UnitEnum.PIECES,
+        expiry_date="2026-04-01",
+        category=CategoryEnum.OTHER,
+        household_id=household_id,
+    )
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -310,7 +392,9 @@ def test_adjust_quantity_404(auth_client: TestClient, create_test_user: User) ->
 def test_list_items_unauthorized(client: TestClient, create_test_user: User) -> None:
     # tests that the API returns a 401 error if the user is not authenticated
     """No auth cookie -> 401."""
-    r = client.get(f"{settings.API_V1_STR}/items", params={"household_id": create_test_user.household_id})
+    r = client.get(
+        f"{settings.API_V1_STR}/items", params={"household_id": create_test_user.household_id}
+    )
     assert r.status_code == 401
 
 

@@ -33,6 +33,13 @@ CATEGORY_DEFAULT_EXPIRY_DAYS: dict[str, int] = {
 VISION_API_KEY = os.getenv("VISION_API_KEY")
 
 ALLERGEN_OPTIONS = [
-    "PEANUTS", "SHELLFISH", "MILK", "EGGS", 
-    "FISH", "TREE_NUTS", "WHEAT", "SOY", "SESAME"
-] # make sure this matches models.VALID_ALLERGENS in app/models/user_allergen.py
+    "PEANUTS",
+    "SHELLFISH",
+    "MILK",
+    "EGGS",
+    "FISH",
+    "TREE_NUTS",
+    "WHEAT",
+    "SOY",
+    "SESAME",
+]  # make sure this matches models.VALID_ALLERGENS in app/models/user_allergen.py

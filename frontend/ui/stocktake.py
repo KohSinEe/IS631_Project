@@ -48,9 +48,11 @@ def render_stocktake() -> None:
                 "Quantity": item["quantity"],
                 "Unit": item["unit"],
                 "Category": item["category"],
-                "Expiry Date": date.fromisoformat(item["expiry_date"])
-                if item.get("expiry_date")
-                else date.today(),
+                "Expiry Date": (
+                    date.fromisoformat(item["expiry_date"])
+                    if item.get("expiry_date")
+                    else date.today()
+                ),
             }
             for item in items
         ]

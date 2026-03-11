@@ -74,7 +74,9 @@ class ItemUpdate(BaseModel):
 class ItemQuantityChange(BaseModel):
     """Schema for incrementing/decrementing item quantity."""
 
-    change: int = Field(..., description="Amount to change (positive to increase, negative to decrease)")
+    change: int = Field(
+        ..., description="Amount to change (positive to increase, negative to decrease)"
+    )
 
 
 class ItemResponse(BaseModel):

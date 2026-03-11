@@ -14,7 +14,6 @@ from app.core.security import (
     decode_refresh_token,
 )
 
-
 # ----- Password hashing -----
 
 

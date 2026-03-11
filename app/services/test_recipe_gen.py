@@ -12,7 +12,6 @@ from app.services.recipe_gen import (
     generate_recipes,
 )
 
-
 # ----- _normalize_items -----
 
 
@@ -24,10 +23,12 @@ def test_normalize_items_name_only() -> None:
 
 def test_normalize_items_with_quantity_and_unit() -> None:
     """Quantity and unit are formatted into the string."""
-    out = _normalize_items([
-        {"name": "egg", "quantity": 6, "unit": "pcs"},
-        {"name": "milk", "quantity": 1, "unit": "cup"},
-    ])
+    out = _normalize_items(
+        [
+            {"name": "egg", "quantity": 6, "unit": "pcs"},
+            {"name": "milk", "quantity": 1, "unit": "cup"},
+        ]
+    )
     assert out == ["6 pcs egg", "1 cup milk"]
 
 
@@ -39,12 +40,14 @@ def test_normalize_items_quantity_no_unit() -> None:
 
 def test_normalize_items_skips_empty_name() -> None:
     """Items with empty or missing name are skipped."""
-    out = _normalize_items([
-        {"name": "egg"},
-        {"name": ""},
-        {"name": "   "},
-        {"quantity": 1, "unit": "cup"},
-    ])
+    out = _normalize_items(
+        [
+            {"name": "egg"},
+            {"name": ""},
+            {"name": "   "},
+            {"quantity": 1, "unit": "cup"},
+        ]
+    )
     assert out == ["egg"]
 
 
@@ -80,7 +83,9 @@ def test_build_prompt_inventory_only_rules() -> None:
 
 def test_build_prompt_with_preferences() -> None:
     """Preferences are serialized into the prompt."""
-    prompt = _build_prompt(["egg"], inventory_only=True, max_recipes=1, preferences={"time_minutes_max": 30})
+    prompt = _build_prompt(
+        ["egg"], inventory_only=True, max_recipes=1, preferences={"time_minutes_max": 30}
+    )
     assert "time_minutes_max" in prompt
     assert "30" in prompt
 
@@ -120,29 +125,33 @@ def test_extract_json_invalid_json_raises() -> None:
 @patch("app.services.recipe_gen.OllamaClient")
 def test_generate_recipes_success(mock_client_class) -> None:
     """generate_recipes returns validated recipe dict when Ollama returns valid JSON."""
-    raw_json = json.dumps({
-        "recipes": [
-            {
-                "title": "Test Recipe",
-                "time_minutes": 15,
-                "ingredients": ["a", "b"],
-                "missing_ingredients": [],
-                "steps": ["Step 1", "Step 2"],
-            }
-        ]
-    })
+    raw_json = json.dumps(
+        {
+            "recipes": [
+                {
+                    "title": "Test Recipe",
+                    "time_minutes": 15,
+                    "ingredients": ["a", "b"],
+                    "missing_ingredients": [],
+                    "steps": ["Step 1", "Step 2"],
+                }
+            ]
+        }
+    )
     mock_instance = AsyncMock()
     mock_instance.chat = AsyncMock(return_value=raw_json)
     mock_client_class.return_value = mock_instance
 
-    result = asyncio.run(generate_recipes(
-        [{"name": "egg", "quantity": 2}],
-        model="test-model",
-        ollama_host="http://fake:11434",
-        inventory_only=True,
-        max_recipes=1,
-        use_chat_endpoint=True,
-    ))
+    result = asyncio.run(
+        generate_recipes(
+            [{"name": "egg", "quantity": 2}],
+            model="test-model",
+            ollama_host="http://fake:11434",
+            inventory_only=True,
+            max_recipes=1,
+            use_chat_endpoint=True,
+        )
+    )
     assert "recipes" in result
     assert len(result["recipes"]) == 1
     assert result["recipes"][0]["title"] == "Test Recipe"

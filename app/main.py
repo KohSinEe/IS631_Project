@@ -31,7 +31,7 @@ app = FastAPI(
     description="Smart household food management system API",
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
 )
 
 # Configure CORS
@@ -50,34 +50,27 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.get("/")
 def root():
     """Root endpoint."""
-    return {
-        "message": "Food Management API",
-        "version": settings.VERSION,
-        "docs": "/docs"
-    }
+    return {"message": "Food Management API", "version": settings.VERSION, "docs": "/docs"}
 
 
 @app.get("/health")
 def health_check():
     """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "version": settings.VERSION
-    }
+    return {"status": "healthy", "version": settings.VERSION}
 
 
 # def custom_openapi():
 #     """Customize OpenAPI schema for cookie-based authentication."""
 #     if app.openapi_schema:
 #         return app.openapi_schema
-    
+
 #     openapi_schema = get_openapi(
 #         title=settings.APP_NAME,
 #         version=settings.VERSION,
 #         description="Smart household food management system API",
 #         routes=app.routes,
 #     )
-    
+
 #     # Add cookie security scheme
 #     openapi_schema["components"]["securitySchemes"] = {
 #         "cookieAuth": {
@@ -87,7 +80,7 @@ def health_check():
 #             "description": "Access token stored in HTTP-only cookie"
 #         }
 #     }
-    
+
 #     app.openapi_schema = openapi_schema
 #     return app.openapi_schema
 
@@ -97,4 +90,5 @@ def health_check():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

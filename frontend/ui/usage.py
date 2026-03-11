@@ -34,13 +34,9 @@ def render_usage_overview() -> None:
 
     col1, col2 = st.columns(2)
     with col1:
-        from_date = st.date_input(
-            "From", value=default_from, max_value=today, format="DD/MM/YYYY"
-        )
+        from_date = st.date_input("From", value=default_from, max_value=today, format="DD/MM/YYYY")
     with col2:
-        to_date = st.date_input(
-            "To", value=today, max_value=today, format="DD/MM/YYYY"
-        )
+        to_date = st.date_input("To", value=today, max_value=today, format="DD/MM/YYYY")
 
     if from_date > to_date:
         st.error("'From' date must be on or before the 'To' date.")
@@ -74,7 +70,9 @@ def render_usage_overview() -> None:
     st.divider()
 
     if not logs:
-        st.info("No consumption recorded in this period. Quantity decreases via 'Quick Actions' are tracked here.")
+        st.info(
+            "No consumption recorded in this period. Quantity decreases via 'Quick Actions' are tracked here."
+        )
         return
 
     # Consumption table
@@ -93,9 +91,7 @@ def render_usage_overview() -> None:
     # CSV export — built from the same table_rows as displayed (AC3)
     st.divider()
     csv_buf = io.StringIO()
-    writer = csv.DictWriter(
-        csv_buf, fieldnames=["Item", "Unit", "Total Consumed", "Last Used"]
-    )
+    writer = csv.DictWriter(csv_buf, fieldnames=["Item", "Unit", "Total Consumed", "Last Used"])
     writer.writeheader()
     writer.writerows(table_rows)
 

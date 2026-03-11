@@ -12,7 +12,13 @@ def fetch_usage_summary(
 ) -> Dict[str, Any]:
     household_id = st.session_state.household_id
     if not household_id:
-        return {"logs": [], "most_used": [], "least_used": [], "period_from": None, "period_to": None}
+        return {
+            "logs": [],
+            "most_used": [],
+            "least_used": [],
+            "period_from": None,
+            "period_to": None,
+        }
 
     params: Dict[str, Any] = {"household_id": household_id}
     if from_date:

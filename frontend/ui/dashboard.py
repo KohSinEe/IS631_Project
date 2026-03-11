@@ -61,101 +61,102 @@ def profile_dialog() -> None:
 
     st.divider()
 
-    # Allergens section
-
-    st.subheader("My Allergens")
-
+    # My Allergens section (always visible in profile)
     try:
         current_allergens = get_my_allergens()
     except Exception:
         current_allergens = []
 
-    if current_allergens:
-        st.write("You are currently allergic to:")
-        st.write(", ".join(current_allergens))
-    else:
-        st.info("No allergens set.")
+    with st.expander("**My Allergens**", expanded=True):
+        if current_allergens:
+            st.write("You are currently allergic to:")
+            st.write(", ".join(current_allergens))
+        else:
+            st.info("No allergens set.")
 
-    #  Add allergens
-    if "show_allergen_edit" not in st.session_state:
-        st.session_state.show_allergen_edit = False
+        if "show_allergen_edit" not in st.session_state:
+            st.session_state.show_allergen_edit = False
 
-    if st.button("Edit My Allergens", use_container_width=True):
-        st.session_state.show_allergen_edit = not st.session_state.show_allergen_edit
+        if st.button(
+            "Edit My Allergens", key="profile_edit_allergens_btn", use_container_width=True
+        ):
+            st.session_state.show_allergen_edit = not st.session_state.show_allergen_edit
 
-    if st.session_state.show_allergen_edit:
-        available = [a for a in ALLERGEN_OPTIONS if a not in current_allergens]
-        removable = current_allergens
+        if st.session_state.show_allergen_edit:
+            available = [a for a in ALLERGEN_OPTIONS if a not in current_allergens]
+            removable = current_allergens
 
-        if available:
-            st.write("**Add allergens:**")
-            to_add = []
-            cols = st.columns(3)
-            for i, allergen in enumerate(available):
-                with cols[i % 3]:
-                    if st.checkbox(allergen, key=f"add_{allergen}"):
-                        to_add.append(allergen)
-            if st.button("Add selected", key="add_allergens_btn"):
-                if to_add:
-                    try:
-                        add_allergens(to_add)
-                        st.success(f"Added: {', '.join(to_add)}")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(str(e))
-                else:
-                    st.warning("No allergens selected")
+            if available:
+                st.write("**Add allergens:**")
+                to_add = []
+                cols = st.columns(3)
+                for i, allergen in enumerate(available):
+                    with cols[i % 3]:
+                        if st.checkbox(allergen, key=f"add_{allergen}"):
+                            to_add.append(allergen)
+                if st.button("Add selected", key="add_allergens_btn"):
+                    if to_add:
+                        try:
+                            add_allergens(to_add)
+                            st.success(f"Added: {', '.join(to_add)}")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(str(e))
+                    else:
+                        st.warning("No allergens selected")
 
-        if removable:
-            st.write("**Remove allergens:**")
-            to_remove = []
-            cols = st.columns(3)
-            for i, allergen in enumerate(removable):
-                with cols[i % 3]:
-                    if st.checkbox(allergen, key=f"remove_{allergen}"):
-                        to_remove.append(allergen)
-            if st.button("Remove selected", key="remove_allergens_btn"):
-                if to_remove:
-                    try:
-                        delete_allergens(to_remove)
-                        st.success(f"Removed: {', '.join(to_remove)}")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(str(e))
-                else:
-                    st.warning("No allergens selected")
+            if removable:
+                st.write("**Remove allergens:**")
+                to_remove = []
+                cols = st.columns(3)
+                for i, allergen in enumerate(removable):
+                    with cols[i % 3]:
+                        if st.checkbox(allergen, key=f"remove_{allergen}"):
+                            to_remove.append(allergen)
+                if st.button("Remove selected", key="remove_allergens_btn"):
+                    if to_remove:
+                        try:
+                            delete_allergens(to_remove)
+                            st.success(f"Removed: {', '.join(to_remove)}")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(str(e))
+                    else:
+                        st.warning("No allergens selected")
 
     st.divider()
 
-    # Display household members' allergens if user is owner or co-owner
-    st.subheader("Household Allergens")
-
+    # Household Allergens (owner/co-owner only)
     user = st.session_state.user or {}
     is_owner = user.get("is_household_owner", False)
     is_co_owner = user.get("household_role") == "co_owner"
 
-    if not user.get("household_id"):
-        st.info("You are not part of a household.")
-    elif is_owner or is_co_owner:
-        try:
-            household_allergens = api_request("get", "/households/allergens")
-            members = fetch_household_members(user["household_id"])
-            member_map = {m.get("id"): m.get("name") or m.get("email") for m in members}
+    with st.expander("**Household Allergens**", expanded=True):
+        if not user.get("household_id"):
+            st.info("You are not part of a household.")
+        elif is_owner or is_co_owner:
+            try:
+                household_allergens = api_request("get", "/households/allergens")
+                members = fetch_household_members(user["household_id"])
+                member_map = {m.get("id"): m.get("name") or m.get("email") for m in members}
 
-            if isinstance(household_allergens, list):
-                has_any = False
-                for entry in household_allergens:
-                    allergens = entry.get("allergens", [])
-                    if allergens:
-                        has_any = True
-                        name = member_map.get(entry.get("user_id"), f"User {entry.get('user_id')}")
-                        st.write(f"**{name.title()}**: {', '.join(allergens)}")
-                if not has_any:
-                    st.info("No household members have allergens set.")
-        except Exception as e:
-            st.error(f"Failed to load household allergens: {str(e)}")
-    else:
-        st.warning("You do not have the authority to see household allergens.")
+                if isinstance(household_allergens, list):
+                    has_any = False
+                    for entry in household_allergens:
+                        allergens = entry.get("allergens", [])
+                        if allergens:
+                            has_any = True
+                            name = member_map.get(
+                                entry.get("user_id"), f"User {entry.get('user_id')}"
+                            )
+                            st.write(f"**{name.title()}**: {', '.join(allergens)}")
+                    if not has_any:
+                        st.info("No household members have allergens set.")
+            except Exception as e:
+                st.error(f"Failed to load household allergens: {str(e)}")
+        else:
+            st.warning("You do not have the authority to see household allergens.")
+
 
 
 @st.dialog("Logout")
@@ -181,7 +182,9 @@ def invite_user_dialog(household_id: int) -> None:
     # Show success + OK when we just sent an invite (so user can acknowledge)
     if st.session_state.get("invite_sent_to"):
         email = st.session_state.invite_sent_to
-        st.success(f"Invitation sent to **{email}**. They can accept or decline from their dashboard.")
+        st.success(
+            f"Invitation sent to **{email}**. They can accept or decline from their dashboard."
+        )
         if st.button("OK", type="primary", use_container_width=True):
             st.session_state.invite_sent_to = None
             st.session_state.show_invite_dialog = False
@@ -272,18 +275,38 @@ def render_header() -> None:
         st.markdown("<div style='margin-top: 1.5rem'></div>", unsafe_allow_html=True)
 
         with st.popover("Account"):
-            if st.button("Profile", use_container_width=True):
+            if st.button("Profile", key="header_profile_btn", use_container_width=True):
                 st.session_state.show_profile_dialog = True
-                if st.session_state.show_profile_dialog:
-                    profile_dialog()
-            if user.get("household_id") and user.get("is_household_owner") and st.button("Invite to fridge", use_container_width=True):
+                st.session_state.show_invite_dialog = False
+                st.session_state.show_delete_fridge_dialog = False
+                st.session_state.show_logout_dialog = False
+            if (
+                user.get("household_id")
+                and user.get("is_household_owner")
+                and st.button("Invite to fridge", key="header_invite_btn", use_container_width=True)
+            ):
                 st.session_state.show_invite_dialog = True
-            if user.get("household_id") and user.get("is_household_owner") and st.button("Delete fridge", use_container_width=True):
+                st.session_state.show_profile_dialog = False
+                st.session_state.show_delete_fridge_dialog = False
+                st.session_state.show_logout_dialog = False
+            if (
+                user.get("household_id")
+                and user.get("is_household_owner")
+                and st.button(
+                    "Delete fridge", key="header_delete_fridge_btn", use_container_width=True
+                )
+            ):
                 st.session_state.show_delete_fridge_dialog = True
-            if st.button("Sign out", type="secondary", use_container_width=True):
+                st.session_state.show_profile_dialog = False
+                st.session_state.show_invite_dialog = False
+                st.session_state.show_logout_dialog = False
+            if st.button(
+                "Sign out", key="header_signout_btn", type="secondary", use_container_width=True
+            ):
                 st.session_state.show_logout_dialog = True
-                if st.session_state.show_logout_dialog:
-                    logout_dialog()
+                st.session_state.show_profile_dialog = False
+                st.session_state.show_invite_dialog = False
+                st.session_state.show_delete_fridge_dialog = False
 
 
 def render_metric(label: str, value: Any, column: st.delta_generator.DeltaGenerator, color: str) -> None:
@@ -431,14 +454,7 @@ def render_dashboard() -> None:
         if st.button("Usage Overview", use_container_width=True):
             st.session_state.page = "usage"
 
-    # Show invite dialog when triggered from Account popover
-    if st.session_state.get("show_invite_dialog") and st.session_state.get("household_id"):
-        invite_user_dialog(st.session_state.household_id)
-    # Show delete-fridge confirmation dialog when triggered (e.g. from Account popover)
-    if st.session_state.get("show_delete_fridge_dialog") and st.session_state.get("household_id"):
-        delete_fridge_dialog(st.session_state.household_id)
-
-    # Pending invitations (for users not in a household, or at top for everyone)
+    # Pending invitations: fetch early so we can open at most one dialog per run
     try:
         raw = fetch_my_invitations()
         pending = [x for x in (raw or []) if isinstance(x, dict)]
@@ -446,12 +462,34 @@ def render_dashboard() -> None:
         pending = []
     if not pending:
         st.session_state.invitation_popup_dismissed = False  # Reset so next invite shows popup
+    if "invitation_popup_dismissed" not in st.session_state:
+        st.session_state.invitation_popup_dismissed = False
+
+    # Open at most one dialog per run (Streamlit allows only one dialog at a time)
+    user = st.session_state.get("user") or {}
+    household_id_for_dialog = st.session_state.get("household_id")
+    dialog_opened_this_run = False
+    if st.session_state.get("show_logout_dialog"):
+        logout_dialog()
+        dialog_opened_this_run = True
+    elif st.session_state.get("show_profile_dialog"):
+        profile_dialog()
+        dialog_opened_this_run = True
+    elif st.session_state.get("show_delete_fridge_dialog") and household_id_for_dialog:
+        delete_fridge_dialog(household_id_for_dialog)
+        dialog_opened_this_run = True
+    elif (
+        st.session_state.get("show_invite_dialog")
+        and household_id_for_dialog
+        and user.get("is_household_owner")
+    ):
+        invite_user_dialog(household_id_for_dialog)
+        dialog_opened_this_run = True
+    elif pending and not st.session_state.invitation_popup_dismissed:
+        invitation_notification_dialog(pending)
+        dialog_opened_this_run = True
+
     if pending:
-        # Pop-up notification for invitee (show once until they click OK)
-        if "invitation_popup_dismissed" not in st.session_state:
-            st.session_state.invitation_popup_dismissed = False
-        if not st.session_state.invitation_popup_dismissed:
-            invitation_notification_dialog(pending)
         st.markdown("### Pending invitations")
         for inv in pending:
             role_label = "Co-owner" if inv.get("role") == "co_owner" else "Child"
@@ -459,10 +497,15 @@ def render_dashboard() -> None:
             inv_id = inv.get("id")
             if inv_id is None:
                 continue
-            st.write(f"**{inv.get('household_name', 'Fridge')}** — {inviter} invited you as **{role_label}**.")
+            st.write(
+                f"**{inv.get('household_name', 'Fridge')}** — {inviter} invited you as **{role_label}**."
+            )
             col1, col2, _ = st.columns([1, 1, 4])
             with col1:
                 if st.button("Accept", key=f"accept_inv_{inv_id}"):
+                    st.session_state.show_invite_dialog = (
+                        False  # Avoid opening "Invite to fridge" after accept
+                    )
                     try:
                         accept_invitation(inv_id)
                         get_current_user()
@@ -541,12 +584,12 @@ def render_dashboard() -> None:
     with add_item_col:
         if st.button("Add Item", use_container_width=True):
             st.session_state.show_add_item_dialog = True
-            if st.session_state.show_add_item_dialog:
+            if st.session_state.show_add_item_dialog and not dialog_opened_this_run:
                 add_item_dialog()
     with edit_item_col:
         if st.button("Edit Items", use_container_width=True):
             st.session_state.show_edit_item_dialog = True
-            if st.session_state.show_edit_item_dialog:
+            if st.session_state.show_edit_item_dialog and not dialog_opened_this_run:
                 edit_item_dialog(st.session_state.filtered_inventory)
 
     st.divider()
@@ -554,7 +597,10 @@ def render_dashboard() -> None:
     st.markdown("### Help Me Generate A Recipe")
 
     inventory_only = not st.toggle(
-        "Consider ingredients outside my fridge", value=False, key="inventory_only_toggle", help="When on, the AI may suggest recipes that need extra ingredients not in your fridge."
+        "Consider ingredients outside my fridge",
+        value=False,
+        key="inventory_only_toggle",
+        help="When on, the AI may suggest recipes that need extra ingredients not in your fridge.",
     )
     st.session_state.inventory_only = inventory_only
 

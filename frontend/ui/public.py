@@ -20,12 +20,15 @@ def sign_in_dialog() -> None:
             except APIError as err:
                 st.error(err.message)
 
+
 def reset_password_form() -> None:
     st.markdown("<h3 style='text-align: center;'>Reset Password</h3>", unsafe_allow_html=True)
     with st.form("reset_pw_form"):
         email = st.text_input("Email", key="reset_email")
         new_password = st.text_input("New Password", type="password", key="reset_new_password")
-        confirm_password = st.text_input("Confirm New Password", type="password", key="reset_confirm_password")
+        confirm_password = st.text_input(
+            "Confirm New Password", type="password", key="reset_confirm_password"
+        )
         submitted = st.form_submit_button("Reset Password")
     if submitted:
         if not email or not new_password or not confirm_password:
@@ -35,6 +38,7 @@ def reset_password_form() -> None:
         else:
             try:
                 from services.user import reset_password
+
                 reset_password(email, new_password)
                 st.success("Password reset successful. Please sign in.")
                 st.session_state.show_pw_reset = False
@@ -47,7 +51,9 @@ def sign_up_dialog() -> None:
     with st.form("signup_form"):
         reg_email = st.text_input("Email", key="register_email")
         reg_password = st.text_input("Password", type="password", key="register_password")
-        reg_password_confirm = st.text_input("Confirm Password", type="password", key="register_password_confirm")
+        reg_password_confirm = st.text_input(
+            "Confirm Password", type="password", key="register_password_confirm"
+        )
         reg_name = st.text_input("Display name", key="register_name")
         reg_household = st.text_input("Household name (optional)", key="register_household")
         submitted = st.form_submit_button("Create account")
@@ -58,7 +64,9 @@ def sign_up_dialog() -> None:
             st.error("Passwords do not match")
         else:
             try:
-                register_user(reg_email, reg_password, reg_password_confirm, reg_name, reg_household)
+                register_user(
+                    reg_email, reg_password, reg_password_confirm, reg_name, reg_household
+                )
                 st.success("Account created. Please sign in.")
             except APIError as err:
                 st.error(err.message)
