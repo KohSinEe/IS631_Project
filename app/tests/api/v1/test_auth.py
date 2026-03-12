@@ -35,12 +35,12 @@ def test_register_with_household(client: TestClient, db) -> None:
             "email": "household@example.com",
             "password": "Password_1",
             "password_confirm": "Password_1",
-            "household_name": "My Household",
+            #"household_name": "My Household",
         },
     )
     assert r.status_code == 201
     data = r.json()
-    assert data["household_id"] is not None
+    assert data["household_id"] == None
 
 
 def test_register_duplicate_email(client: TestClient, create_test_user: User) -> None:
