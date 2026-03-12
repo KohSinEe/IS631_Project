@@ -17,6 +17,7 @@ SESSION_DEFAULTS = {
     "show_sign_up_form": False,
     "show_pw_reset": False,
     # Dashboard dialogs: reset on logout so profile doesn't open on next login
+    "show_household_setup": False,
     "show_profile_dialog": False,
     "show_logout_dialog": False,
     "show_invite_dialog": False,
