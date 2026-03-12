@@ -52,7 +52,7 @@ def handle_image_scan() -> None:
         return
     result = response.json()
     labels = result.get("responses", [{}])[0].get("labelAnnotations", [])
-    detected_foods = [(l["description"], l["score"]) for l in labels if l.get("score", 0) > 0.3]
+    detected_foods = [(l["description"], l["score"]) for l in labels if l.get("score", 0) > 0.9]
     detected_foods.sort(key=lambda x: x[1], reverse=True)
     food_names = [name for name, _ in detected_foods]
 
