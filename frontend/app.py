@@ -18,6 +18,7 @@ from ui.recipe import handle_generate_recipe
 from ui.stocktake import render_stocktake
 from ui.usage import render_usage_overview
 from utils.inventory import show_expiry_notifications
+from ui.household_setup import render_household_setup
 
 
 def main() -> None:
@@ -29,18 +30,21 @@ def main() -> None:
     init_session_state()
 
     if st.session_state.is_authenticated:
-        ensure_inventory_loaded()
-        show_expiry_notifications(st.session_state.inventory)
+        if not st.session_state.household_id:
+            render_household_setup()
+        else:
+            ensure_inventory_loaded()
+            show_expiry_notifications(st.session_state.inventory)
 
-        if st.session_state.page == "dashboard":
-            st.session_state.category_filter = "All"
-            render_dashboard()
-        elif st.session_state.page == "recipe":
-            handle_generate_recipe()
-        elif st.session_state.page == "stocktake":
-            render_stocktake()
-        elif st.session_state.page == "usage":
-            render_usage_overview()
+            if st.session_state.page == "dashboard":
+                st.session_state.category_filter = "All"
+                render_dashboard()
+            elif st.session_state.page == "recipe":
+                handle_generate_recipe()
+            elif st.session_state.page == "stocktake":
+                render_stocktake()
+            elif st.session_state.page == "usage":
+                render_usage_overview()
     else:
         render_public_view()
 
