@@ -51,7 +51,9 @@ class ItemBase(BaseModel):
 class ItemCreate(ItemBase):
     """Schema for creating a new item. expiry_date is optional and auto-filled if blank."""
 
-    expiry_date: Optional[date] = Field(None, description="Expiry date; auto-estimated from category if not provided")
+    expiry_date: Optional[date] = Field(
+        None, description="Expiry date; auto-estimated from category if not provided"
+    )
 
 
 class ItemUpdate(BaseModel):

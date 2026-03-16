@@ -94,7 +94,9 @@ def create_item(
         name=item.name,
         quantity=item.quantity,
         unit=item.unit,
-        expiry_date=(item.expiry_date or get_default_expiry_for_category(item.category.value)).isoformat(),
+        expiry_date=(
+            item.expiry_date or get_default_expiry_for_category(item.category.value)
+        ).isoformat(),
         category=item.category,
         household_id=household_id,
     )
