@@ -41,6 +41,8 @@ from utils.inventory import (
 @st.dialog("Profile")
 def profile_dialog() -> None:
     user = st.session_state.user or {}
+    is_owner = user.get("is_household_owner", False)
+    is_co_owner = user.get("household_role") == "co_owner"
 
     with st.form("update_profile_form"):
         name = st.text_input(
@@ -133,10 +135,6 @@ def profile_dialog() -> None:
     st.divider()
 
     # Household Allergens (owner/co-owner only)
-    user = st.session_state.user or {}
-    is_owner = user.get("is_household_owner", False)
-    is_co_owner = user.get("household_role") == "co_owner"
-
     with st.expander("**Household Allergens**", expanded=True):
         if not user.get("household_id"):
             st.info("You are not part of a household.")
@@ -431,6 +429,8 @@ def edit_item_dialog(sorted_items) -> None:
 
 
 def render_dashboard() -> None:
+    user = st.session_state.get("user") or {}
+
     if "show_add_item_dialog" not in st.session_state:
         st.session_state.show_add_item_dialog = False
     if "show_edit_item_dialog" not in st.session_state:
@@ -464,7 +464,6 @@ def render_dashboard() -> None:
         st.session_state.invitation_popup_dismissed = False
 
     # Open at most one dialog per run (Streamlit allows only one dialog at a time)
-    user = st.session_state.get("user") or {}
     household_id_for_dialog = st.session_state.get("household_id")
     dialog_opened_this_run = False
     if st.session_state.get("show_logout_dialog"):
@@ -541,7 +540,6 @@ def render_dashboard() -> None:
         st.divider()
 
     # Owner: invitation status (accepted / declined / pending) so they see when someone responds
-    user = st.session_state.user or {}
     if user.get("is_household_owner"):
         try:
             sent_invites = fetch_household_invites(household_id)
@@ -594,7 +592,6 @@ def render_dashboard() -> None:
     )
     st.session_state.inventory_only = inventory_only
 
-    user = st.session_state.user or {}
     if user.get("household_id"):
         cooking_for = st.radio(
             "Who are you cooking for?",
