@@ -24,6 +24,7 @@ load_dotenv(env_path)
 def main() -> None:
     if "page" not in st.session_state:
         st.session_state.page = "dashboard"
+    st.session_state.active_dialog = None
 
     st.set_page_config(page_title="Smart Pantry Dashboard", page_icon="🥕", layout="wide")
     st.markdown(CUSTOM_STYLE, unsafe_allow_html=True)

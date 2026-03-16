@@ -38,7 +38,11 @@ from utils.inventory import (
 )
 
 
-@st.dialog("Profile")
+def _reset_dialog():
+    st.session_state.active_dialog = None
+
+
+@st.dialog("Profile", on_dismiss=_reset_dialog)
 def profile_dialog() -> None:
     user = st.session_state.user or {}
     is_owner = user.get("is_household_owner", False)
@@ -160,7 +164,7 @@ def profile_dialog() -> None:
             st.warning("You do not have the authority to see household allergens.")
 
 
-@st.dialog("Logout")
+@st.dialog("Logout", on_dismiss=_reset_dialog)
 def logout_dialog() -> None:
     col1, col2 = st.columns([1, 1])
 
@@ -170,23 +174,22 @@ def logout_dialog() -> None:
                 logout_user()
             except Exception:
                 pass  # Local state is cleared in logout_user; ensure we still close and rerun
-            st.session_state.show_logout_dialog = False
             st.rerun()
     with col2:
         if st.button("No", type="secondary", use_container_width=True):
-            st.session_state.show_logout_dialog = False
             st.rerun()
 
 
-@st.dialog("Invite to fridge")
-def invite_user_dialog(household_id: int) -> None:
+@st.dialog("Invite to fridge", on_dismiss=_reset_dialog)
+def invite_user_dialog() -> None:
+    household_id = st.session_state.get("household_id")
+
     # Show success + OK when we just sent an invite (so user can acknowledge)
     if st.session_state.get("invite_sent_to"):
         email = st.session_state.invite_sent_to
         st.success(f"Invitation sent to **{email}**. They can accept or decline from their dashboard.")
         if st.button("OK", type="primary", use_container_width=True):
             st.session_state.invite_sent_to = None
-            st.session_state.show_invite_dialog = False
             st.rerun()
         return
 
@@ -212,7 +215,7 @@ def invite_user_dialog(household_id: int) -> None:
                 st.error(getattr(e, "message", str(e)))
 
 
-@st.dialog("You have a fridge invitation")
+@st.dialog("You have a fridge invitation", on_dismiss=_reset_dialog)
 def invitation_notification_dialog(invites: list) -> None:
     """Pop-up to notify the user they have pending invitation(s)."""
     invites = [i for i in (invites or []) if isinstance(i, dict)]
@@ -229,19 +232,19 @@ def invitation_notification_dialog(invites: list) -> None:
         st.rerun()
 
 
-@st.dialog("Delete fridge")
-def delete_fridge_dialog(household_id: int) -> None:
+@st.dialog("Delete fridge", on_dismiss=_reset_dialog)
+def delete_fridge_dialog() -> None:
+    household_id = st.session_state.get("household_id")
+
     st.warning("This will permanently delete your fridge and all its contents. " "All members will be removed from the fridge. This cannot be undone.")
     col1, col2 = st.columns([1, 1])
     with col1:
         if st.button("Cancel", type="secondary", use_container_width=True):
-            st.session_state.show_delete_fridge_dialog = False
             st.rerun()
     with col2:
         if st.button("Delete my fridge", type="primary", use_container_width=True):
             try:
                 delete_household(household_id)
-                st.session_state.show_delete_fridge_dialog = False
                 st.success("Fridge deleted.")
                 st.rerun()
             except APIError as e:
@@ -250,14 +253,8 @@ def delete_fridge_dialog(household_id: int) -> None:
 
 def render_header() -> None:
     user = st.session_state.user or {}
-    if "show_profile_dialog" not in st.session_state:
-        st.session_state.show_profile_dialog = False
-    if "show_logout_dialog" not in st.session_state:
-        st.session_state.show_logout_dialog = False
-    if "show_delete_fridge_dialog" not in st.session_state:
-        st.session_state.show_delete_fridge_dialog = False
-    if "show_invite_dialog" not in st.session_state:
-        st.session_state.show_invite_dialog = False
+    household_id = user.get("household_id")
+    is_owner = user.get("is_household_owner")
 
     header_left, header_right = st.columns([8, 2])
 
@@ -277,26 +274,14 @@ def render_header() -> None:
         st.markdown("<div style='margin-top: 1.5rem'></div>", unsafe_allow_html=True)
 
         with st.popover("Account"):
-            if st.button("Profile", key="header_profile_btn", use_container_width=True):
-                st.session_state.show_profile_dialog = True
-                st.session_state.show_invite_dialog = False
-                st.session_state.show_delete_fridge_dialog = False
-                st.session_state.show_logout_dialog = False
-            if user.get("household_id") and user.get("is_household_owner") and st.button("Invite to fridge", key="header_invite_btn", use_container_width=True):
-                st.session_state.show_invite_dialog = True
-                st.session_state.show_profile_dialog = False
-                st.session_state.show_delete_fridge_dialog = False
-                st.session_state.show_logout_dialog = False
-            if user.get("household_id") and user.get("is_household_owner") and st.button("Delete fridge", key="header_delete_fridge_btn", use_container_width=True):
-                st.session_state.show_delete_fridge_dialog = True
-                st.session_state.show_profile_dialog = False
-                st.session_state.show_invite_dialog = False
-                st.session_state.show_logout_dialog = False
-            if st.button("Sign out", key="header_signout_btn", type="secondary", use_container_width=True):
-                st.session_state.show_logout_dialog = True
-                st.session_state.show_profile_dialog = False
-                st.session_state.show_invite_dialog = False
-                st.session_state.show_delete_fridge_dialog = False
+            if st.button("Profile", key="header_profile_btn", use_container_width=True) or st.session_state.active_dialog == "user_profile":
+                profile_dialog()
+            if household_id and is_owner and (st.button("Invite to fridge", key="header_invite_btn", use_container_width=True) or st.session_state.active_dialog == "invite_user"):
+                invite_user_dialog()
+            if household_id and is_owner and (st.button("Delete fridge", key="header_delete_fridge_btn", use_container_width=True) or st.session_state.active_dialog == "delete_fridge"):
+                delete_fridge_dialog()
+            if st.button("Sign out", key="header_signout_btn", type="secondary", use_container_width=True) or st.session_state.active_dialog == "logout":
+                logout_dialog()
 
 
 def render_metric(label: str, value: Any, column: st.delta_generator.DeltaGenerator, color: str) -> None:
@@ -409,7 +394,7 @@ def handle_add_item() -> None:
             st.error(err.message)
 
 
-@st.dialog("AddItem")
+@st.dialog("AddItem", on_dismiss=_reset_dialog)
 def add_item_dialog() -> None:
     tab1, tab2, tab3 = st.tabs(["Manual Entry", "Barcode Scan", "Photo Scan"])
 
@@ -423,18 +408,13 @@ def add_item_dialog() -> None:
         handle_image_scan()
 
 
-@st.dialog("EditItem")
+@st.dialog("EditItem", on_dismiss=_reset_dialog)
 def edit_item_dialog(sorted_items) -> None:
     handle_quick_actions(sorted_items)
 
 
 def render_dashboard() -> None:
     user = st.session_state.get("user") or {}
-
-    if "show_add_item_dialog" not in st.session_state:
-        st.session_state.show_add_item_dialog = False
-    if "show_edit_item_dialog" not in st.session_state:
-        st.session_state.show_edit_item_dialog = False
 
     ensure_inventory_loaded()
 
@@ -447,9 +427,11 @@ def render_dashboard() -> None:
     nav_col1, nav_col2 = st.columns(2)
     with nav_col1:
         if st.button("Stocktake", use_container_width=True):
+            st.session_state.active_dialog = None
             st.session_state.page = "stocktake"
     with nav_col2:
         if st.button("Usage Overview", use_container_width=True):
+            st.session_state.active_dialog = None
             st.session_state.page = "usage"
 
     # Pending invitations: fetch early so we can open at most one dialog per run
@@ -463,24 +445,8 @@ def render_dashboard() -> None:
     if "invitation_popup_dismissed" not in st.session_state:
         st.session_state.invitation_popup_dismissed = False
 
-    # Open at most one dialog per run (Streamlit allows only one dialog at a time)
-    household_id_for_dialog = st.session_state.get("household_id")
-    dialog_opened_this_run = False
-    if st.session_state.get("show_logout_dialog"):
-        logout_dialog()
-        dialog_opened_this_run = True
-    elif st.session_state.get("show_profile_dialog"):
-        profile_dialog()
-        dialog_opened_this_run = True
-    elif st.session_state.get("show_delete_fridge_dialog") and household_id_for_dialog:
-        delete_fridge_dialog(household_id_for_dialog)
-        dialog_opened_this_run = True
-    elif st.session_state.get("show_invite_dialog") and household_id_for_dialog and user.get("is_household_owner"):
-        invite_user_dialog(household_id_for_dialog)
-        dialog_opened_this_run = True
-    elif pending and not st.session_state.invitation_popup_dismissed:
+    if pending and not st.session_state.invitation_popup_dismissed:
         invitation_notification_dialog(pending)
-        dialog_opened_this_run = True
 
     if pending:
         st.markdown("### Pending invitations")
@@ -494,7 +460,7 @@ def render_dashboard() -> None:
             col1, col2, _ = st.columns([1, 1, 4])
             with col1:
                 if st.button("Accept", key=f"accept_inv_{inv_id}"):
-                    st.session_state.show_invite_dialog = False  # Avoid opening "Invite to fridge" after accept
+                    st.session_state.active_dialog = None  # Avoid opening "Invite to fridge" after accept
                     try:
                         accept_invitation(inv_id)
                         get_current_user()
@@ -571,14 +537,12 @@ def render_dashboard() -> None:
 
     with add_item_col:
         if st.button("Add Item", use_container_width=True):
-            st.session_state.show_add_item_dialog = True
-            if st.session_state.show_add_item_dialog and not dialog_opened_this_run:
-                add_item_dialog()
+            st.session_state.active_dialog = "add_item"
+            add_item_dialog()
     with edit_item_col:
-        if st.button("Edit Items", use_container_width=True):
-            st.session_state.show_edit_item_dialog = True
-            if st.session_state.show_edit_item_dialog and not dialog_opened_this_run:
-                edit_item_dialog(st.session_state.filtered_inventory)
+        if st.button("Edit Items", use_container_width=True) or st.session_state.active_dialog == "edit_item":
+            st.session_state.active_dialog = "edit_item"
+            edit_item_dialog(st.session_state.filtered_inventory)
 
     st.divider()
 
