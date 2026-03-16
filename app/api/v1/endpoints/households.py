@@ -12,7 +12,6 @@ from app.models.user import User
 from app.schemas.invitation import InviteCreate, InvitationResponse, HouseholdMemberResponse
 from app.schemas.household import HouseholdCreate, HouseholdResponse
 
-
 router = APIRouter()
 
 
@@ -197,6 +196,7 @@ def list_household_members(
             )
         )
     return result
+
 
 @router.post("", response_model=HouseholdResponse, status_code=status.HTTP_201_CREATED)
 def create_household(

@@ -49,7 +49,7 @@ def register(user_in: UserCreate, db: DatabaseDep):
         email=user_in.email,
         name=user_in.name,
         hashed_password=get_password_hash(user_in.password),
-       household_id=None,
+        household_id=None,
         is_active=True,
     )
 

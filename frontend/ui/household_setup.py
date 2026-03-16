@@ -25,6 +25,7 @@ def _render_create_household() -> None:
             except APIError as err:
                 st.error(err.message)
 
+
 @st.dialog("You have a fridge invitation!")
 def _invitation_popup(invites: list) -> None:
     inv = invites[0]
@@ -77,6 +78,7 @@ def _render_pending_invitations(invitations: list) -> None:
                     try:
                         accept_invitation(inv_id)
                         from services.user import get_current_user
+
                         get_current_user()
                         st.toast("Invitation accepted!")
                         st.rerun()

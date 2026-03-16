@@ -101,6 +101,7 @@ def delete_household(household_id: int) -> None:
         st.session_state.user["household_id"] = None
         st.session_state.user["is_household_owner"] = False
 
+
 def create_household(name: str) -> Dict[str, Any]:
     result = api_request("post", "/households", json={"name": name})
     if isinstance(result, dict):
@@ -109,6 +110,7 @@ def create_household(name: str) -> Dict[str, Any]:
             st.session_state.user["household_id"] = result.get("id")
             st.session_state.user["is_household_owner"] = True
     return result
+
 
 # Allergens related:
 

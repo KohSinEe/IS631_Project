@@ -65,7 +65,11 @@ def sign_up_dialog() -> None:
         else:
             try:
                 register_user(
-                    reg_email, reg_password, reg_password_confirm, reg_name, None # none = household input
+                    reg_email,
+                    reg_password,
+                    reg_password_confirm,
+                    reg_name,
+                    None,  # none = household input
                 )
                 st.success("Account created. Please sign in.")
             except APIError as err:

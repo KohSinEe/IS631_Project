@@ -74,6 +74,5 @@ class BarcodeService:
         return get_default_expiry_for_category(matched_category).isoformat()
 
 
-
 # Singleton instance
 barcode_service = BarcodeService()
