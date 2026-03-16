@@ -429,10 +429,12 @@ def render_dashboard() -> None:
         if st.button("Stocktake", use_container_width=True):
             st.session_state.active_dialog = None
             st.session_state.page = "stocktake"
+            st.rerun()
     with nav_col2:
         if st.button("Usage Overview", use_container_width=True):
             st.session_state.active_dialog = None
             st.session_state.page = "usage"
+            st.rerun()
 
     # Pending invitations: fetch early so we can open at most one dialog per run
     try:
