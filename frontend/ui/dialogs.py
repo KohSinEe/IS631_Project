@@ -97,7 +97,6 @@ def invitation_dialog(invites: list) -> None:
     if len(invites) > 1:
         st.caption(f"You have {len(invites)} pending invitation(s) total.")
     if st.button("OK", type="primary", use_container_width=True):
-        st.session_state.invitation_popup_dismissed = True
         st.rerun()
 
 
@@ -239,7 +238,7 @@ def logout_dialog() -> None:
             st.rerun()
 
 
-@st.dialog("Invite to fridge", on_dismiss=_reset_dialog)
+@st.dialog("Invite to Fridge", on_dismiss=_reset_dialog)
 def invite_user_dialog() -> None:
     household_id = st.session_state.get("household_id")
 
@@ -276,7 +275,6 @@ def invite_user_dialog() -> None:
 
 @st.dialog("You have a fridge invitation", on_dismiss=_reset_dialog)
 def invitation_notification_dialog(invites: list) -> None:
-    """Pop-up to notify the user they have pending invitation(s)."""
     invites = [i for i in (invites or []) if isinstance(i, dict)]
     if not invites:
         return

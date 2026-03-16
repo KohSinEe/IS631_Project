@@ -82,12 +82,8 @@ def render_household_setup() -> None:
     except Exception:
         pending = []
 
-    if not pending:
-        st.session_state.invitation_popup_dismissed = False
-    if "invitation_popup_dismissed" not in st.session_state:
-        st.session_state.invitation_popup_dismissed = False
-
-    if pending and not st.session_state.invitation_popup_dismissed:
+    if pending and not st.session_state.household_setup_invitation_shown:
+        st.session_state.household_setup_invitation_shown = True
         invitation_dialog(pending)
 
     col1, col2, col3 = st.columns([1, 4, 1])
