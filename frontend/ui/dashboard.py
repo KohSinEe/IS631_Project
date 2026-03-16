@@ -447,7 +447,13 @@ def render_dashboard() -> None:
     if "show_edit_item_dialog" not in st.session_state:
         st.session_state.show_edit_item_dialog = False
 
+    ensure_inventory_loaded()
+
     render_header()
+
+    if "flash_success" in st.session_state:
+        st.success(st.session_state.flash_success)
+        del st.session_state.flash_success
 
     nav_col1, nav_col2 = st.columns(2)
     with nav_col1:
