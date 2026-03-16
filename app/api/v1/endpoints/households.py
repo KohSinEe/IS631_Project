@@ -26,23 +26,12 @@ def delete_household(
     Only the household owner can delete. All members are removed from the
     household and all items in the fridge are permanently deleted.
     """
-    if current_user.household_id != household_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied to this household",
-        )
-    if not current_user.is_household_owner:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the fridge owner can delete it",
-        )
-
-    household = db.query(Household).filter(Household.id == household_id).first()
-    if not household:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Household not found",
-        )
+    household = _ensure_owner_and_household(
+        current_user=current_user,
+        household_id=household_id,
+        db=db,
+        forbidden_detail="Only the fridge owner can delete it",
+    )
 
     # Unlink all users from this household so FK allows delete
     db.query(User).filter(User.household_id == household_id).update(
@@ -59,6 +48,7 @@ def _ensure_owner_and_household(
     current_user: User,
     household_id: int,
     db,
+    forbidden_detail: str = "Only the fridge owner can perform this action",
 ) -> Household:
     """Raise if not owner of this household; return the household."""
     if current_user.household_id != household_id:
@@ -69,7 +59,7 @@ def _ensure_owner_and_household(
     if not current_user.is_household_owner:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only the fridge owner can invite members",
+            detail=forbidden_detail,
         )
     household = db.query(Household).filter(Household.id == household_id).first()
     if not household:
@@ -95,7 +85,12 @@ def create_invitation(
     Invite a user to the fridge by email and assign a role (Co-owner or Child).
     Only the household owner can invite. The invitee must have an existing account.
     """
-    household = _ensure_owner_and_household(current_user, household_id, db)
+    household = _ensure_owner_and_household(
+        current_user=current_user,
+        household_id=household_id,
+        db=db,
+        forbidden_detail="Only the fridge owner can invite members",
+    )
 
     invitee = db.query(User).filter(User.email == body.email.lower().strip()).first()
     if not invitee:
@@ -148,7 +143,12 @@ def list_invitations(
     db: DatabaseDep,
 ):
     """List invitations sent for this household. Owner only."""
-    _ensure_owner_and_household(current_user, household_id, db)
+    _ensure_owner_and_household(
+        current_user=current_user,
+        household_id=household_id,
+        db=db,
+        forbidden_detail="Only the fridge owner can invite members",
+    )
     invites = (
         db.query(Invitation)
         .filter(Invitation.household_id == household_id)
@@ -181,16 +181,16 @@ def list_household_members(
         )
     users = db.query(User).filter(User.household_id == household_id).all()
     result = []
-    for u in users:
-        if household.owner_id == u.id:
+    for user in users:
+        if household.owner_id == user.id:
             role = "owner"
         else:
-            role = u.household_role.value if u.household_role else "child"
+            role = user.household_role.value if user.household_role else "child"
         result.append(
             HouseholdMemberResponse(
-                id=u.id,
-                email=u.email,
-                name=u.name,
+                id=user.id,
+                email=user.email,
+                name=user.name,
                 role=role,
             )
         )
