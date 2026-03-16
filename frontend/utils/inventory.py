@@ -1,9 +1,9 @@
-import streamlit as st
-from services.inventory import fetch_inventory
-from typing import Any, Dict, List
 from datetime import date, datetime, timedelta
+from typing import Any, Dict, List
 
+import streamlit as st
 from config.settings import EXPIRY_ALERT_DAYS
+from services.inventory import fetch_inventory
 
 
 def parse_expiry(raw_value: str) -> date:

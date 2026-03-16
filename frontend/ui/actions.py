@@ -1,13 +1,13 @@
-import streamlit as st
-from typing import Any, Dict, List
 from datetime import date
+from typing import Any, Dict, List
 
-from config.settings import UNIT_OPTIONS, CATEGORY_OPTIONS
+import streamlit as st
+from config.settings import CATEGORY_OPTIONS, UNIT_OPTIONS
 from services.client import APIError
 from services.inventory import (
     adjust_inventory_quantity,
-    delete_inventory_item,
     create_inventory_item,
+    delete_inventory_item,
 )
 
 
@@ -47,17 +47,12 @@ def handle_quick_actions(items: List[Dict[str, Any]]) -> None:
         st.info("Inventory is empty")
         return
 
-    option_map = {
-        f"#{item['id']} · {item['name']} ({item['quantity']} {item['unit']})": item["id"]
-        for item in items
-    }
+    option_map = {f"#{item['id']} · {item['name']} ({item['quantity']} {item['unit']})": item["id"] for item in items}
     labels = list(option_map.keys())
 
     with st.form("quantity_form"):
         selected = st.selectbox("Select item", labels, key="adjust_target")
-        change = st.number_input(
-            "Adjust quantity", min_value=-100, max_value=100, value=1, step=1, key="adjust_delta"
-        )
+        change = st.number_input("Adjust quantity", min_value=-100, max_value=100, value=1, step=1, key="adjust_delta")
         submitted = st.form_submit_button("Apply change")
     if submitted:
         try:

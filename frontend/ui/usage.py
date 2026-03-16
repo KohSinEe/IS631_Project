@@ -1,11 +1,9 @@
-"""Usage Overview page — consumption patterns over a selected date range."""
-
 import csv
 import io
-import streamlit as st
 from datetime import date, timedelta
 from typing import Any, Dict, List
 
+import streamlit as st
 from services.client import APIError
 from services.usage import fetch_usage_summary
 
@@ -70,9 +68,7 @@ def render_usage_overview() -> None:
     st.divider()
 
     if not logs:
-        st.info(
-            "No consumption recorded in this period. Quantity decreases via 'Quick Actions' are tracked here."
-        )
+        st.info("No consumption recorded in this period. Quantity decreases via 'Quick Actions' are tracked here.")
         return
 
     # Consumption table

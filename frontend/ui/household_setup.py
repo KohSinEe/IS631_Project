@@ -1,9 +1,7 @@
-"""Household setup landing page - shown after login if user has no household."""
-
 import streamlit as st
-from services.user import create_household, logout_user
-from services.invitations import fetch_my_invitations, accept_invitation, decline_invitation
 from services.client import APIError
+from services.invitations import accept_invitation, decline_invitation, fetch_my_invitations
+from services.user import create_household, logout_user
 
 
 def _render_create_household() -> None:

@@ -1,6 +1,6 @@
 import streamlit as st
-from services.user import login_user, register_user
 from services.client import APIError
+from services.user import login_user, register_user
 
 
 @st.dialog("Sign In")
@@ -26,9 +26,7 @@ def reset_password_form() -> None:
     with st.form("reset_pw_form"):
         email = st.text_input("Email", key="reset_email")
         new_password = st.text_input("New Password", type="password", key="reset_new_password")
-        confirm_password = st.text_input(
-            "Confirm New Password", type="password", key="reset_confirm_password"
-        )
+        confirm_password = st.text_input("Confirm New Password", type="password", key="reset_confirm_password")
         submitted = st.form_submit_button("Reset Password")
     if submitted:
         if not email or not new_password or not confirm_password:
@@ -51,11 +49,8 @@ def sign_up_dialog() -> None:
     with st.form("signup_form"):
         reg_email = st.text_input("Email", key="register_email")
         reg_password = st.text_input("Password", type="password", key="register_password")
-        reg_password_confirm = st.text_input(
-            "Confirm Password", type="password", key="register_password_confirm"
-        )
+        reg_password_confirm = st.text_input("Confirm Password", type="password", key="register_password_confirm")
         reg_name = st.text_input("Display name", key="register_name")
-        # reg_household = st.text_input("Household name (optional)", key="register_household") -  no longer required
         submitted = st.form_submit_button("Create account")
     if submitted:
         if not reg_email or not reg_password or not reg_password_confirm:
@@ -83,10 +78,7 @@ def render_public_view() -> None:
         st.session_state.sign_in_form_data = {"email": "", "password": ""}
 
     st.markdown(
-        "<div class='landing-hero'>"
-        "<h1>🥕 FridgeBuddy</h1>"
-        "<p class='landing-tagline'>Stop guessing. Start managing.</p>"
-        "</div>",
+        "<div class='landing-hero'>" "<h1>🥕 FridgeBuddy</h1>" "<p class='landing-tagline'>Stop guessing. Start managing.</p>" "</div>",
         unsafe_allow_html=True,
     )
     st.markdown("<br>", unsafe_allow_html=True)

@@ -1,6 +1,6 @@
 """Invitation and household members API client."""
 
-from typing import Any, List
+from typing import List
 
 from services.client import api_request
 

@@ -1,10 +1,8 @@
-"""Mass Stocktake page — inline editing of all inventory items."""
-
-import streamlit as st
-import pandas as pd
 from datetime import date
 from typing import Any, Dict, List
 
+import pandas as pd
+import streamlit as st
 from config.settings import CATEGORY_OPTIONS
 from services.client import APIError
 from services.inventory import update_inventory_item
@@ -20,10 +18,7 @@ def render_stocktake() -> None:
             st.rerun()
     with col_title:
         st.markdown("## Mass Stocktake")
-        st.caption(
-            "Edit quantities, categories, and expiry dates directly in the table below. "
-            "Press **Save Changes** when done."
-        )
+        st.caption("Edit quantities, categories, and expiry dates directly in the table below. " "Press **Save Changes** when done.")
 
     household_id = st.session_state.household_id
     if not household_id:
@@ -48,11 +43,7 @@ def render_stocktake() -> None:
                 "Quantity": item["quantity"],
                 "Unit": item["unit"],
                 "Category": item["category"],
-                "Expiry Date": (
-                    date.fromisoformat(item["expiry_date"])
-                    if item.get("expiry_date")
-                    else date.today()
-                ),
+                "Expiry Date": (date.fromisoformat(item["expiry_date"]) if item.get("expiry_date") else date.today()),
             }
             for item in items
         ]
@@ -77,11 +68,7 @@ def render_stocktake() -> None:
     st.markdown("")
     if st.button("Save Changes", type="primary", use_container_width=True):
         # Detect rows that changed in any editable column
-        changed_mask = (
-            (original_df["Quantity"] != edited_df["Quantity"])
-            | (original_df["Category"] != edited_df["Category"])
-            | (original_df["Expiry Date"] != edited_df["Expiry Date"])
-        )
+        changed_mask = (original_df["Quantity"] != edited_df["Quantity"]) | (original_df["Category"] != edited_df["Category"]) | (original_df["Expiry Date"] != edited_df["Expiry Date"])
         changed_indices = original_df.index[changed_mask].tolist()
 
         if not changed_indices:
