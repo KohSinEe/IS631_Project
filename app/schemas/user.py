@@ -24,7 +24,6 @@ class UserCreate(UserBase):
     password_confirm: str = Field(
         ..., min_length=8, max_length=72, description="Password confirmation (must match password)"
     )
-    # household_name: Optional[str] = Field(None, description="Name for new household (optional)")
 
     @field_validator("password")
     @classmethod

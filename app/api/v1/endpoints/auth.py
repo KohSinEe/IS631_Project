@@ -36,14 +36,6 @@ def register(user_in: UserCreate, db: DatabaseDep):
             status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
         )
 
-    # Create household if provided (no longer required)
-    # household_id = None
-    # if user_in.household_name:
-    #     household = Household(name=user_in.household_name)
-    #     db.add(household)
-    #     db.flush()  # Get the ID without committing
-    #     household_id = household.id
-
     # Create user (use only password, password_confirm is validated by schema)
     user = User(
         email=user_in.email,
@@ -55,12 +47,6 @@ def register(user_in: UserCreate, db: DatabaseDep):
 
     db.add(user)
     db.flush()  # Get user.id
-
-    # Set household owner when user created the household
-    # if household_id and user.household_id:
-    #     household = db.query(Household).filter(Household.id == household_id).first()
-    #     if household:
-    #         household.owner_id = user.id
 
     db.commit()
     db.refresh(user)
