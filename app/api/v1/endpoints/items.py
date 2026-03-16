@@ -6,6 +6,7 @@ from typing import List
 from datetime import date
 
 from app.database import get_db
+from app.dependencies import require_household_id
 from app.models import Item
 from app.models.usage_log import ItemUsageLog
 from app.schemas.item import ItemCreate, ItemUpdate, ItemResponse, ItemQuantityChange, Category
@@ -38,16 +39,7 @@ def list_items(
     - **category**: Optional category filter
     - **sort_by_expiry**: Sort results by expiry date
     """
-    if not household_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="household_id is required"
-        )
-
-    # Verify user has access to this household
-    if current_user.household_id != household_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied to this household"
-        )
+    household_id = require_household_id(current_user, household_id)
 
     query = db.query(Item).filter(Item.household_id == household_id)
 
@@ -79,16 +71,7 @@ def create_item(
     - **category**: Category of the item
     - **household_id**: The household to add the item to
     """
-    if not household_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="household_id is required"
-        )
-
-    # Verify user has access to this household
-    if current_user.household_id != household_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied to this household"
-        )
+    household_id = require_household_id(current_user, household_id)
 
     db_item = Item(
         name=item.name,
@@ -114,16 +97,7 @@ def get_item(
     current_user=Depends(get_current_user),
 ):
     """Get a specific item by ID."""
-    if not household_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="household_id is required"
-        )
-
-    # Verify user has access to this household
-    if current_user.household_id != household_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied to this household"
-        )
+    household_id = require_household_id(current_user, household_id)
 
     item = get_item_or_404(item_id, household_id, db)
     return item
@@ -138,16 +112,7 @@ def update_item(
     current_user=Depends(get_current_user),
 ):
     """Update an item."""
-    if not household_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="household_id is required"
-        )
-
-    # Verify user has access to this household
-    if current_user.household_id != household_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied to this household"
-        )
+    household_id = require_household_id(current_user, household_id)
 
     db_item = get_item_or_404(item_id, household_id, db)
 
@@ -175,16 +140,7 @@ def delete_item(
     current_user=Depends(get_current_user),
 ):
     """Delete an item."""
-    if not household_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="household_id is required"
-        )
-
-    # Verify user has access to this household
-    if current_user.household_id != household_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied to this household"
-        )
+    household_id = require_household_id(current_user, household_id)
 
     db_item = get_item_or_404(item_id, household_id, db)
     db.delete(db_item)
@@ -204,16 +160,7 @@ def adjust_item_quantity(
 
     - **change**: Positive number to increase, negative to decrease quantity
     """
-    if not household_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="household_id is required"
-        )
-
-    # Verify user has access to this household
-    if current_user.household_id != household_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied to this household"
-        )
+    household_id = require_household_id(current_user, household_id)
 
     db_item = get_item_or_404(item_id, household_id, db)
 

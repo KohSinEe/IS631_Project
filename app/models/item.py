@@ -3,7 +3,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func, Enum
 from sqlalchemy.orm import relationship
 from enum import Enum as PyEnum
-from datetime import date
 
 from app.database import Base
 

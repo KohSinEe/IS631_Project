@@ -62,7 +62,7 @@ def get_usage_summary(
             total_consumed=r.total_consumed,
             last_consumed=r.last_consumed,
         )
-        for r in rows
+        for row in rows
     ]
 
     sorted_logs = sorted(logs, key=lambda x: x.total_consumed, reverse=True)
