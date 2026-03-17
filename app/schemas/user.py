@@ -109,3 +109,17 @@ class UserInDB(UserResponse):
 class PasswordResetRequest(BaseModel):
     email: EmailStr
     new_password: str
+
+
+class PasswordResetStartRequest(BaseModel):
+    """Start password reset by sending verification code to user."""
+
+    email: EmailStr
+
+
+class PasswordResetConfirmRequest(BaseModel):
+    """Complete password reset using verification code."""
+
+    email: EmailStr
+    confirmation_code: str = Field(..., min_length=1, max_length=20)
+    new_password: str = Field(..., min_length=8, max_length=72)

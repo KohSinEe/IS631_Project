@@ -25,21 +25,45 @@ def reset_password_form() -> None:
     st.markdown("<h3 style='text-align: center;'>Reset Password</h3>", unsafe_allow_html=True)
     with st.form("reset_pw_form"):
         email = st.text_input("Email", key="reset_email")
+        confirmation_code = st.text_input(
+            "Verification Code (from email)", key="reset_confirmation_code"
+        )
         new_password = st.text_input("New Password", type="password", key="reset_new_password")
         confirm_password = st.text_input(
             "Confirm New Password", type="password", key="reset_confirm_password"
         )
+        send_code = st.form_submit_button("Send Verification Code")
         submitted = st.form_submit_button("Reset Password")
+
+    if send_code:
+        if not email:
+            st.error("Email is required")
+        else:
+            try:
+                from services.user import request_password_reset
+
+                local_fallback_password = None
+                if new_password and confirm_password and new_password == confirm_password:
+                    local_fallback_password = new_password
+
+                request_password_reset(email, local_fallback_password)
+                if local_fallback_password:
+                    st.success("Password reset successful. Please sign in.")
+                else:
+                    st.success("Verification code sent. Check your email.")
+            except APIError as err:
+                st.error(err.message)
+
     if submitted:
-        if not email or not new_password or not confirm_password:
+        if not email or not confirmation_code or not new_password or not confirm_password:
             st.error("All fields are required")
         elif new_password != confirm_password:
             st.error("Passwords do not match")
         else:
             try:
-                from services.user import reset_password
+                from services.user import confirm_password_reset
 
-                reset_password(email, new_password)
+                confirm_password_reset(email, confirmation_code, new_password)
                 st.success("Password reset successful. Please sign in.")
                 st.session_state.show_pw_reset = False
             except APIError as err:
@@ -67,9 +91,57 @@ def sign_up_dialog() -> None:
                 register_user(
                     reg_email, reg_password, reg_password_confirm, reg_name, reg_household
                 )
-                st.success("Account created. Please sign in.")
+                st.session_state.verification_email = reg_email
+                st.session_state.show_sign_up_form = False
+                st.session_state.show_sign_up_verification = True
+                st.rerun()
             except APIError as err:
                 st.error(err.message)
+
+
+@st.dialog("Verify Account")
+def sign_up_verification_form() -> None:
+    st.markdown("<h3 style='text-align: center;'>Verify Account</h3>", unsafe_allow_html=True)
+    email = st.session_state.get("verification_email") or st.session_state.get("register_email", "")
+    with st.form("verify_signup_form"):
+        st.text_input("Email", value=email, key="verification_email", disabled=bool(email))
+        code = st.text_input("Verification Code", key="verification_code")
+        resend = st.form_submit_button("Resend Code")
+        verify = st.form_submit_button("Verify Account")
+
+    if resend:
+        if not email:
+            st.error("Email is required")
+        else:
+            try:
+                from services.user import resend_signup_code
+
+                resend_signup_code(email)
+                st.success("Verification code sent.")
+            except APIError as err:
+                # Local mode does not require verification.
+                if err.status_code == 400:
+                    st.session_state.show_sign_up_verification = False
+                    st.success("Account created. Please sign in.")
+                else:
+                    st.error(err.message)
+
+    if verify:
+        if not email or not code:
+            st.error("Email and verification code are required")
+        else:
+            try:
+                from services.user import confirm_signup
+
+                confirm_signup(email, code)
+                st.session_state.show_sign_up_verification = False
+                st.success("Account verified. Please sign in.")
+            except APIError as err:
+                if err.status_code == 400:
+                    st.session_state.show_sign_up_verification = False
+                    st.success("Account created. Please sign in.")
+                else:
+                    st.error(err.message)
 
 
 def render_public_view() -> None:
@@ -93,20 +165,25 @@ def render_public_view() -> None:
         if st.button("Sign In", key="landing_signin", use_container_width=True):
             st.session_state.show_sign_in_form = True
             st.session_state.show_sign_up_form = False
+            st.session_state.show_sign_up_verification = False
             st.session_state.show_pw_reset = False
         if st.button("Sign Up", key="landing_signup", use_container_width=True):
             st.session_state.show_sign_up_form = True
             st.session_state.show_sign_in_form = False
+            st.session_state.show_sign_up_verification = False
             st.session_state.show_pw_reset = False
         if st.button("Forgot Password?", key="landing_forgotpw", use_container_width=True):
             st.session_state.show_pw_reset = True
             st.session_state.show_sign_in_form = False
             st.session_state.show_sign_up_form = False
+            st.session_state.show_sign_up_verification = False
 
         # Only show one dialog or form at a time
         if st.session_state.get("show_sign_in_form"):
             sign_in_dialog()
         elif st.session_state.get("show_sign_up_form"):
             sign_up_dialog()
+        elif st.session_state.get("show_sign_up_verification"):
+            sign_up_verification_form()
         elif st.session_state.get("show_pw_reset"):
             reset_password_form()

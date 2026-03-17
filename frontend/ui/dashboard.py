@@ -9,7 +9,7 @@ from utils.inventory import (
     ensure_inventory_loaded,
     filter_inventory,
 )
-from services.user import logout_user, update_user, delete_household, get_current_user
+from services.user import logout_user, update_user, delete_household, get_current_user, change_password
 from services.client import APIError
 from services.inventory import create_inventory_item
 from services.invitations import (
@@ -58,6 +58,28 @@ def profile_dialog() -> None:
             except Exception as e:
                 st.error("Failed to update profile. Please try again")
                 st.error(e)
+
+    st.divider()
+    st.subheader("Change Password")
+    with st.form("change_password_form"):
+        current_password = st.text_input("Current Password", type="password")
+        new_password = st.text_input("New Password", type="password")
+        confirm_new_password = st.text_input("Confirm New Password", type="password")
+        change_pw = st.form_submit_button("Update Password", use_container_width=True)
+
+    if change_pw:
+        if not current_password or not new_password or not confirm_new_password:
+            st.error("All password fields are required")
+        elif new_password != confirm_new_password:
+            st.error("New passwords do not match")
+        elif current_password == new_password:
+            st.error("New password must be different from current password")
+        else:
+            try:
+                change_password(current_password, new_password)
+                st.success("Password updated successfully")
+            except APIError as err:
+                st.error(getattr(err, "message", str(err)))
 
     st.divider()
 

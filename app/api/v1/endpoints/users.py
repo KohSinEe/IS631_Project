@@ -3,9 +3,22 @@
 from fastapi import APIRouter, HTTPException, status, Body, Depends
 
 from app.dependencies import DatabaseDep, CurrentUserDep
-from app.schemas.user import UserResponse, UserUpdate, PasswordChange, PasswordResetRequest
-from app.core.security import verify_password, get_password_hash
+from app.schemas.user import (
+    UserResponse,
+    UserUpdate,
+    PasswordChange,
+    PasswordResetRequest,
+    PasswordResetStartRequest,
+    PasswordResetConfirmRequest,
+)
+from app.core.security import verify_password, get_password_hash, oauth2_scheme
+from app.config import settings
 from app.models.user import User
+from app.core.cognito import (
+    cognito_change_password,
+    cognito_forgot_password_start,
+    cognito_forgot_password_confirm,
+)
 
 router = APIRouter()
 
@@ -39,15 +52,26 @@ def update_current_user(user_update: UserUpdate, current_user: CurrentUserDep, d
 
 
 @router.put("/me/password", status_code=status.HTTP_200_OK)
-def change_password(password_change: PasswordChange, current_user: CurrentUserDep, db: DatabaseDep):
+def change_password(
+    password_change: PasswordChange,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+    token: str = Depends(oauth2_scheme),
+):
     """
     Change current user's password.
 
     - **current_password**: Current password for verification
     - **new_password**: New password (min 8 characters)
     """
+    if settings.is_cognito_enabled:
+        cognito_change_password(token, password_change.current_password, password_change.new_password)
+        return {"message": "Password updated successfully"}
+
     # Verify current password
-    if not verify_password(password_change.current_password, current_user.hashed_password):
+    if not current_user.hashed_password or not verify_password(
+        password_change.current_password, current_user.hashed_password
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect current password"
         )
@@ -64,6 +88,36 @@ def change_password(password_change: PasswordChange, current_user: CurrentUserDe
     db.commit()
 
     return {"message": "Password updated successfully"}
+
+
+@router.post("/reset-password/request", status_code=status.HTTP_200_OK)
+def request_password_reset(request: PasswordResetStartRequest):
+    """Send password reset verification code to user email (Cognito mode)."""
+    if not settings.is_cognito_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Use /users/reset-password in local auth mode",
+        )
+
+    cognito_forgot_password_start(request.email)
+    return {"message": "Password reset code sent"}
+
+
+@router.post("/reset-password/confirm", status_code=status.HTTP_200_OK)
+def confirm_password_reset(request: PasswordResetConfirmRequest):
+    """Complete password reset with verification code (Cognito mode)."""
+    if not settings.is_cognito_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Use /users/reset-password in local auth mode",
+        )
+
+    cognito_forgot_password_confirm(
+        email=request.email,
+        confirmation_code=request.confirmation_code,
+        new_password=request.new_password,
+    )
+    return {"message": "Password reset successful"}
 
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
@@ -86,6 +140,12 @@ def reset_password(request: PasswordResetRequest, db: DatabaseDep = DatabaseDep)
     - **email**: User's email address
     - **new_password**: New password to set
     """
+    if settings.is_cognito_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password reset is managed by Cognito",
+        )
+
     import re
 
     password = request.new_password

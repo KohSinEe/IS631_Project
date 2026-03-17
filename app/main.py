@@ -17,12 +17,13 @@ from dotenv import load_dotenv
 
 from app.config import settings
 from app.api.v1.api import api_router
-from app.database import Base, engine
+from app.database import Base, engine, apply_startup_schema_patches
 
 load_dotenv()
 
 # Create database tables from current schema
 Base.metadata.create_all(bind=engine)
+apply_startup_schema_patches()
 
 # Create FastAPI application
 app = FastAPI(
