@@ -2,14 +2,26 @@ from datetime import date, timedelta
 from typing import Any, Dict, List
 import streamlit as st
 from config.settings import CATEGORY_OPTIONS, EXPIRY_ALERT_DAYS
-from config.settings import EXPIRY_ALERT_DAYS, CATEGORY_OPTIONS, UNIT_OPTIONS, ALLERGEN_OPTIONS, CATEGORY_DEFAULT_EXPIRY_DAYS
+from config.settings import (
+    EXPIRY_ALERT_DAYS,
+    CATEGORY_OPTIONS,
+    UNIT_OPTIONS,
+    ALLERGEN_OPTIONS,
+    CATEGORY_DEFAULT_EXPIRY_DAYS,
+)
 from utils.inventory import (
     parse_expiry,
     summarize_inventory,
     ensure_inventory_loaded,
     filter_inventory,
 )
-from services.user import logout_user, update_user, delete_household, get_current_user, change_password
+from services.user import (
+    logout_user,
+    update_user,
+    delete_household,
+    get_current_user,
+    change_password,
+)
 from services.client import APIError
 from services.invitations import (
     accept_invitation,
@@ -194,7 +206,6 @@ def profile_dialog() -> None:
             st.warning("You do not have the authority to see household allergens.")
 
 
-
 @st.dialog("Logout")
 def logout_dialog() -> None:
     col1, col2 = st.columns([1, 1])
@@ -268,7 +279,10 @@ def invitation_notification_dialog(invites: list) -> None:
 
 @st.dialog("Delete fridge")
 def delete_fridge_dialog(household_id: int) -> None:
-    st.warning("This will permanently delete your fridge and all its contents. " "All members will be removed from the fridge. This cannot be undone.")
+    st.warning(
+        "This will permanently delete your fridge and all its contents. "
+        "All members will be removed from the fridge. This cannot be undone."
+    )
     col1, col2 = st.columns([1, 1])
     with col1:
         if st.button("Cancel", type="secondary", use_container_width=True):
@@ -308,21 +322,47 @@ def render_header() -> None:
         st.markdown("<div style='margin-top: 1.5rem'></div>", unsafe_allow_html=True)
 
         with st.popover("Account"):
-            if st.button("Profile", key="header_profile_btn", use_container_width=True) or st.session_state.active_dialog == "user_profile":
+            if (
+                st.button("Profile", key="header_profile_btn", use_container_width=True)
+                or st.session_state.active_dialog == "user_profile"
+            ):
                 st.session_state.active_dialog = "user_profile"
                 profile_dialog()
-            if household_id and is_owner and (st.button("Invite to fridge", key="header_invite_btn", use_container_width=True) or st.session_state.active_dialog == "invite_user"):
+            if (
+                household_id
+                and is_owner
+                and (
+                    st.button("Invite to fridge", key="header_invite_btn", use_container_width=True)
+                    or st.session_state.active_dialog == "invite_user"
+                )
+            ):
                 st.session_state.active_dialog = "invite_user"
                 invite_user_dialog()
-            if household_id and is_owner and (st.button("Delete fridge", key="header_delete_fridge_btn", use_container_width=True) or st.session_state.active_dialog == "delete_fridge"):
+            if (
+                household_id
+                and is_owner
+                and (
+                    st.button(
+                        "Delete fridge", key="header_delete_fridge_btn", use_container_width=True
+                    )
+                    or st.session_state.active_dialog == "delete_fridge"
+                )
+            ):
                 st.session_state.active_dialog = "delete_fridge"
                 delete_fridge_dialog()
-            if st.button("Sign out", key="header_signout_btn", type="secondary", use_container_width=True) or st.session_state.active_dialog == "logout":
+            if (
+                st.button(
+                    "Sign out", key="header_signout_btn", type="secondary", use_container_width=True
+                )
+                or st.session_state.active_dialog == "logout"
+            ):
                 st.session_state.active_dialog = "logout"
                 logout_dialog()
 
 
-def render_metric(label: str, value: Any, column: st.delta_generator.DeltaGenerator, color: str) -> None:
+def render_metric(
+    label: str, value: Any, column: st.delta_generator.DeltaGenerator, color: str
+) -> None:
     color_class = {
         "blue": "",
         "green": "metric-green",
@@ -353,10 +393,16 @@ def render_expiry_alerts(summary: Dict[str, Any]) -> None:
         st.write(f"• {item['name']} — {item['quantity']} {item['unit']} by {expiry}")
 
 
-def render_inventory_table(items: List[Dict[str, Any]], sort_by_expiry: bool) -> List[Dict[str, Any]]:
+def render_inventory_table(
+    items: List[Dict[str, Any]], sort_by_expiry: bool
+) -> List[Dict[str, Any]]:
     working = items.copy()
     if sort_by_expiry:
-        working.sort(key=lambda entry: (parse_expiry(entry["expiry_date"]) if entry.get("expiry_date") else date.max))
+        working.sort(
+            key=lambda entry: (
+                parse_expiry(entry["expiry_date"]) if entry.get("expiry_date") else date.max
+            )
+        )
 
     rows: List[Dict[str, Any]] = []
     soon_cutoff = date.today() + timedelta(days=EXPIRY_ALERT_DAYS)
@@ -434,11 +480,15 @@ def render_dashboard() -> None:
             inv_id = inv.get("id")
             if inv_id is None:
                 continue
-            st.write(f"**{inv.get('household_name', 'Fridge')}** — {inviter} invited you as **{role_label}**.")
+            st.write(
+                f"**{inv.get('household_name', 'Fridge')}** — {inviter} invited you as **{role_label}**."
+            )
             col1, col2, _ = st.columns([1, 1, 4])
             with col1:
                 if st.button("Accept", key=f"accept_inv_{inv_id}"):
-                    st.session_state.active_dialog = None  # Avoid opening "Invite to fridge" after accept
+                    st.session_state.active_dialog = (
+                        None  # Avoid opening "Invite to fridge" after accept
+                    )
                     try:
                         accept_invitation(inv_id)
                         get_current_user()
@@ -465,7 +515,9 @@ def render_dashboard() -> None:
     household_id = st.session_state.household_id
     if not household_id:
         if not pending:
-            st.info("You do not belong to a fridge yet. Get invited by an owner, or create an account with a household name.")
+            st.info(
+                "You do not belong to a fridge yet. Get invited by an owner, or create an account with a household name."
+            )
         ensure_inventory_loaded()
         return
 
@@ -510,15 +562,22 @@ def render_dashboard() -> None:
     _ = st.selectbox("Filter by category", filter_options, key="category_filter")
     _ = st.toggle("Sort by expiry date", key="sort_by_expiry")
 
-    st.session_state.filtered_inventory = filter_inventory(st.session_state.inventory, st.session_state.category_filter)
-    st.session_state.filtered_inventory = render_inventory_table(st.session_state.filtered_inventory, st.session_state.sort_by_expiry)
+    st.session_state.filtered_inventory = filter_inventory(
+        st.session_state.inventory, st.session_state.category_filter
+    )
+    st.session_state.filtered_inventory = render_inventory_table(
+        st.session_state.filtered_inventory, st.session_state.sort_by_expiry
+    )
 
     with add_item_col:
         if st.button("Add Item", use_container_width=True):
             st.session_state.active_dialog = "add_item"
             add_item_dialog()
     with edit_item_col:
-        if st.button("Edit Items", use_container_width=True) or st.session_state.active_dialog == "edit_item":
+        if (
+            st.button("Edit Items", use_container_width=True)
+            or st.session_state.active_dialog == "edit_item"
+        ):
             st.session_state.active_dialog = "edit_item"
             edit_item_dialog(st.session_state.filtered_inventory)
 

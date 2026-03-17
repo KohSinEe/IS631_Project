@@ -152,19 +152,31 @@ def render_public_view() -> None:
         st.session_state.sign_in_form_data = {"email": "", "password": ""}
 
     st.markdown(
-        "<div class='landing-hero'>" "<h1>🥕 FridgeBuddy</h1>" "<p class='landing-tagline'>Stop guessing. Start managing.</p>" "</div>",
+        "<div class='landing-hero'>"
+        "<h1>🥕 FridgeBuddy</h1>"
+        "<p class='landing-tagline'>Stop guessing. Start managing.</p>"
+        "</div>",
         unsafe_allow_html=True,
     )
     st.markdown("<br>", unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([2, 3, 2])
     with col2:
-        if st.button("Sign In", key="landing_signin", use_container_width=True) or st.session_state.active_dialog == "sign_in":
+        if (
+            st.button("Sign In", key="landing_signin", use_container_width=True)
+            or st.session_state.active_dialog == "sign_in"
+        ):
             st.session_state.active_dialog = "sign_in"
             sign_in_dialog()
-        if st.button("Sign Up", key="landing_signup", use_container_width=True) or st.session_state.active_dialog == "sign_up":
+        if (
+            st.button("Sign Up", key="landing_signup", use_container_width=True)
+            or st.session_state.active_dialog == "sign_up"
+        ):
             st.session_state.active_dialog = "sign_up"
             sign_up_dialog()
-        if st.button("Forgot Password?", key="landing_forgotpw", use_container_width=True) or st.session_state.active_dialog == "forget_pw":
+        if (
+            st.button("Forgot Password?", key="landing_forgotpw", use_container_width=True)
+            or st.session_state.active_dialog == "forget_pw"
+        ):
             st.session_state.active_dialog = "forget_pw"
             reset_password_dialog()
