@@ -7,18 +7,15 @@ from services.client import APIError
 from services.invitations import (
     accept_invitation,
     decline_invitation,
-    fetch_household_invites,
-    fetch_household_members,
     fetch_my_invitations,
 )
 from services.user import get_current_user
 from ui.dialogs import (
     add_item_dialog,
-    delete_fridge_dialog,
     edit_item_dialog,
     invitation_notification_dialog,
-    invite_user_dialog,
     logout_dialog,
+    manage_fridge_dialog,
     profile_dialog,
 )
 from utils.inventory import (
@@ -32,7 +29,6 @@ from utils.inventory import (
 def render_header() -> None:
     user = st.session_state.user or {}
     household_id = user.get("household_id")
-    is_owner = user.get("is_household_owner")
 
     header_left, header_right = st.columns([8, 2])
 
@@ -55,12 +51,9 @@ def render_header() -> None:
             if st.button("Profile", key="header_profile_btn", use_container_width=True) or st.session_state.active_dialog == "user_profile":
                 st.session_state.active_dialog = "user_profile"
                 profile_dialog()
-            if household_id and is_owner and (st.button("Invite to fridge", key="header_invite_btn", use_container_width=True) or st.session_state.active_dialog == "invite_user"):
-                st.session_state.active_dialog = "invite_user"
-                invite_user_dialog()
-            if household_id and is_owner and (st.button("Delete fridge", key="header_delete_fridge_btn", use_container_width=True) or st.session_state.active_dialog == "delete_fridge"):
-                st.session_state.active_dialog = "delete_fridge"
-                delete_fridge_dialog()
+            if household_id and (st.button("Manage Fridge", key="manage_fridge_button", use_container_width=True) or st.session_state.active_dialog == "manage_fridge"):
+                st.session_state.active_dialog = "manage_fridge"
+                manage_fridge_dialog()
             if st.button("Sign out", key="header_signout_btn", type="secondary", use_container_width=True) or st.session_state.active_dialog == "logout":
                 st.session_state.active_dialog = "logout"
                 logout_dialog()
@@ -144,18 +137,6 @@ def render_dashboard() -> None:
         st.success(st.session_state.flash_success)
         del st.session_state.flash_success
 
-    nav_col1, nav_col2 = st.columns(2)
-    with nav_col1:
-        if st.button("Stocktake", use_container_width=True):
-            st.session_state.active_dialog = None
-            st.session_state.page = "stocktake"
-            st.rerun()
-    with nav_col2:
-        if st.button("Usage Overview", use_container_width=True):
-            st.session_state.active_dialog = None
-            st.session_state.page = "usage"
-            st.rerun()
-
     # Pending invitations: fetch early so we can open at most one dialog per run
     try:
         raw = fetch_my_invitations()
@@ -206,44 +187,28 @@ def render_dashboard() -> None:
     render_metric("Expiring soon", summary["expiring"], action_cols[1], "orange")
     render_metric("Expired", summary["overdue"], action_cols[2], "red")
 
+    st.space()
+
+    nav_col1, nav_col2 = st.columns(2)
+    with nav_col1:
+        if st.button("Stocktake", use_container_width=True):
+            st.session_state.active_dialog = None
+            st.session_state.page = "stocktake"
+            st.rerun()
+    with nav_col2:
+        if st.button("Usage Overview", use_container_width=True):
+            st.session_state.active_dialog = None
+            st.session_state.page = "usage"
+            st.rerun()
+
+    st.divider()
+
     household_id = st.session_state.household_id
     if not household_id:
         if not pending:
             st.info("You do not belong to a fridge yet. Get invited by an owner, or create an account with a household name.")
         ensure_inventory_loaded()
         return
-
-    # Fridge members and their roles
-    try:
-        members = fetch_household_members(household_id)
-    except APIError:
-        members = []
-    if members:
-        role_label = {"owner": "Owner", "co_owner": "Co-owner", "child": "Child"}
-        st.markdown("### Fridge members")
-        for m in members:
-            name = m.get("name") or m.get("email") or "—"
-            role = role_label.get(m.get("role"), m.get("role", ""))
-            st.caption(f"**{name}** — {role}")
-        st.divider()
-
-    # Owner: invitation status (accepted / declined / pending) so they see when someone responds
-    if user.get("is_household_owner"):
-        try:
-            sent_invites = fetch_household_invites(household_id)
-        except APIError:
-            sent_invites = []
-        if sent_invites:
-            status_label = {"pending": "Pending", "accepted": "Accepted", "declined": "Declined"}
-            role_label_inv = {"co_owner": "Co-owner", "child": "Child"}
-            with st.expander("Invitation status (shared fridge)"):
-                st.caption("You’ll see here when someone accepts or declines your invite.")
-                for inv in sent_invites:
-                    email = inv.get("invitee_email", "")
-                    role = role_label_inv.get(inv.get("role"), inv.get("role", ""))
-                    status = status_label.get(inv.get("status"), inv.get("status", ""))
-                    st.caption(f"**{email}** — {role} — *{status}*")
-            st.divider()
 
     add_item_col, edit_item_col = st.columns([1, 1])
 

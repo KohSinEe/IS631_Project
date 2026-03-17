@@ -1,7 +1,11 @@
 import streamlit as st
 from config.settings import ALLERGEN_OPTIONS
 from services.client import APIError, api_request
-from services.invitations import create_invite, fetch_household_members
+from services.invitations import (
+    create_invite,
+    fetch_household_invites,
+    fetch_household_members,
+)
 from services.user import (
     add_allergens,
     delete_allergens,
@@ -238,41 +242,6 @@ def logout_dialog() -> None:
             st.rerun()
 
 
-@st.dialog("Invite to Fridge", on_dismiss=_reset_dialog)
-def invite_user_dialog() -> None:
-    household_id = st.session_state.get("household_id")
-
-    # Show success + OK when we just sent an invite (so user can acknowledge)
-    if st.session_state.get("invite_sent_to"):
-        email = st.session_state.invite_sent_to
-        st.success(f"Invitation sent to **{email}**. They can accept or decline from their dashboard.")
-        if st.button("OK", type="primary", use_container_width=True):
-            st.session_state.invite_sent_to = None
-            st.rerun()
-        return
-
-    st.caption("Invite someone by email. They must already have an account.")
-    with st.form("invite_user_form"):
-        email = st.text_input("Email", placeholder="friend@example.com", key="invite_email")
-        role = st.selectbox(
-            "Role",
-            options=["co_owner", "child"],
-            format_func=lambda x: "Co-owner" if x == "co_owner" else "Child",
-            key="invite_role",
-        )
-        submitted = st.form_submit_button("Send invite")
-    if submitted:
-        if not email or "@" not in email:
-            st.error("Please enter a valid email.")
-        else:
-            try:
-                create_invite(household_id, email.strip(), role)
-                st.session_state.invite_sent_to = email.strip()
-                st.rerun()
-            except APIError as e:
-                st.error(getattr(e, "message", str(e)))
-
-
 @st.dialog("You have a fridge invitation", on_dismiss=_reset_dialog)
 def invitation_notification_dialog(invites: list) -> None:
     invites = [i for i in (invites or []) if isinstance(i, dict)]
@@ -289,23 +258,118 @@ def invitation_notification_dialog(invites: list) -> None:
         st.rerun()
 
 
-@st.dialog("Delete fridge", on_dismiss=_reset_dialog)
-def delete_fridge_dialog() -> None:
+@st.dialog("Manage Fridge", on_dismiss=_reset_dialog)
+def manage_fridge_dialog() -> None:
+    user = st.session_state.get("user") or {}
     household_id = st.session_state.get("household_id")
+    is_owner = user.get("is_household_owner", False)
 
-    st.warning("This will permanently delete your fridge and all its contents. " "All members will be removed from the fridge. This cannot be undone.")
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        if st.button("Cancel", type="secondary", use_container_width=True):
-            st.rerun()
-    with col2:
-        if st.button("Delete my fridge", type="primary", use_container_width=True):
-            try:
-                delete_household(household_id)
-                st.success("Fridge deleted.")
+    try:
+        members = fetch_household_members(household_id)
+    except APIError:
+        members = []
+
+    try:
+        sent_invites = fetch_household_invites(household_id) if is_owner else []
+    except APIError:
+        sent_invites = []
+
+    st.markdown("**Fridge Members**")
+
+    if members:
+        role_label = {"owner": "Owner", "co_owner": "Co-owner", "child": "Child"}
+        role_order = {"owner": 0, "co_owner": 1, "child": 2}
+        current_email = user.get("email", "").lower()
+
+        sorted_members = sorted(members, key=lambda m: (role_order.get(m.get("role"), 999), (m.get("name") or m.get("email") or "—").lower()))
+
+        for m in sorted_members:
+            member_name = m.get("name") or m.get("email") or "—"
+            member_email = m.get("email", "").lower()
+            is_current_user = member_email == current_email
+
+            if is_current_user:
+                display_name = f"{member_name} (you)"
+            else:
+                display_name = member_name
+
+            role = role_label.get(m.get("role"), m.get("role", ""))
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.caption(f"**{display_name}**")
+            with col2:
+                st.caption(f"_{role}_")
+    else:
+        st.caption("No members yet.")
+
+    if is_owner:
+        st.divider()
+
+        with st.expander("Add Members", expanded=False):
+            st.caption("Invite someone by email. They must already have an account.")
+
+            with st.form("manage_fridge_invite_form"):
+                email = st.text_input(
+                    "Email address",
+                    placeholder="friend@example.com",
+                    key="manage_invite_email",
+                    help="The person must already have an account",
+                )
+                role = st.selectbox(
+                    "Role",
+                    options=["co_owner", "child"],
+                    format_func=lambda x: "Co-owner" if x == "co_owner" else "Child",
+                    key="manage_invite_role",
+                    help="Co-owners can manage the fridge. Children have read-only access.",
+                )
+                submitted = st.form_submit_button("Send invitation", use_container_width=True, type="primary")
+
+            if submitted:
+                if not email or "@" not in email:
+                    st.error("Please enter a valid email address.")
+                else:
+                    try:
+                        create_invite(household_id, email.strip(), role)
+                        st.toast(f"Invitation sent to {email.strip()}")
+                        st.rerun()
+                    except APIError as e:
+                        st.error(getattr(e, "message", str(e)))
+
+        if sent_invites:
+            with st.expander("Pending Invitations", expanded=False):
+                status_label = {"pending": "Pending", "accepted": "Accepted", "declined": "Declined"}
+                role_label_inv = {"co_owner": "Co-owner", "child": "Child"}
+
+                for inv in sent_invites:
+                    email = inv.get("invitee_email", "")
+                    role = role_label_inv.get(inv.get("role"), inv.get("role", ""))
+                    status = status_label.get(inv.get("status"), inv.get("status", ""))
+
+                    col1, col2, col3 = st.columns([2, 1, 1])
+                    with col1:
+                        st.caption(f"**{email}**")
+                    with col2:
+                        st.caption(f"_{role}_")
+                    with col3:
+                        status_color = "green" if status == "Accepted" else "orange" if status == "Pending" else "red"
+                        st.caption(f":{status_color}[{status}]")
+
+        st.divider()
+
+        st.markdown("**Delete Fridge**")
+        st.warning("This action will permanently delete your fridge and all its contents. All members will be removed. This cannot be undone.")
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("Cancel", type="secondary", use_container_width=True, key="delete_cancel_btn"):
                 st.rerun()
-            except APIError as e:
-                st.error(getattr(e, "message", str(e)))
+        with col2:
+            if st.button("Delete fridge", type="primary", use_container_width=True, key="delete_fridge_confirm_btn"):
+                try:
+                    delete_household(household_id)
+                    st.success("Fridge deleted.")
+                    st.rerun()
+                except APIError as e:
+                    st.error(getattr(e, "message", str(e)))
 
 
 @st.dialog("AddItem", on_dismiss=_reset_dialog)
