@@ -104,104 +104,135 @@ def invitation_dialog(invites: list) -> None:
         st.rerun()
 
 
+def _render_allergen_pills(allergens: list) -> None:
+    """Render allergens as badges."""
+    if not allergens:
+        st.caption("None set")
+        return
+
+    # Create two rows of badges
+    cols = st.columns(len(allergens) if len(allergens) <= 3 else 3, gap="small")
+    for i, allergen in enumerate(allergens):
+        with cols[i % len(cols)]:
+            st.metric("", allergen, label_visibility="collapsed")
+
+
 @st.dialog("Profile", on_dismiss=_reset_dialog)
 def profile_dialog() -> None:
     user = st.session_state.user or {}
     is_owner = user.get("is_household_owner", False)
     is_co_owner = user.get("household_role") == "co_owner"
 
-    with st.form("update_profile_form"):
-        name = st.text_input(
-            "Username",
-            value=user.get("name") or "",
-            placeholder="Enter your display name",
-        )
-        _ = st.text_input(
-            "Email",
-            value=user.get("email") or "",
-            disabled=True,
+    # Profile Header
+    header_col1, header_col2 = st.columns([1, 3], gap="medium")
+    with header_col1:
+        user_name = user.get("name") or user.get("email", "U")
+        initials = "".join([word[0].upper() for word in user_name.split()][:2])
+        st.markdown(
+            f"""
+        <div style='
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        '>{initials}</div>
+        """,
+            unsafe_allow_html=True,
         )
 
-        save = st.form_submit_button("Save", use_container_width=True)
-
-    if save:
-        if not name.strip():
-            st.error("Name cannot be empty")
-        else:
-            try:
-                update_user(name)
-                st.success("Profile updated successfully")
-            except Exception as e:
-                st.error("Failed to update profile. Please try again")
-                st.error(e)
+    with header_col2:
+        st.markdown(f"## {user_name}")
+        st.caption(f"📧 {user.get('email', 'N/A')}")
 
     st.divider()
 
-    # My Allergens section (always visible in profile)
-    try:
-        current_allergens = get_my_allergens()
-    except Exception:
-        current_allergens = []
+    tab_profile, tab_allergen = st.tabs(["Account", "Allergens"])
 
-    with st.expander("**My Allergens**", expanded=True):
-        if current_allergens:
-            st.write("You are currently allergic to:")
-            st.write(", ".join(current_allergens))
+    with tab_profile:
+        st.subheader("Edit Profile")
+        with st.form("update_profile_form"):
+            name = st.text_input(
+                "Display Name",
+                value=user.get("name") or "",
+                placeholder="Enter your display name",
+            )
+            _ = st.text_input(
+                "Email",
+                value=user.get("email") or "",
+                disabled=True,
+            )
+
+            save = st.form_submit_button("Save Changes", use_container_width=True, type="primary")
+
+        if save:
+            if not name.strip():
+                st.error("Name cannot be empty")
+            else:
+                try:
+                    update_user(name)
+                    st.rerun()
+                except Exception:
+                    st.error("Failed to update profile. Please try again")
+
+    with tab_allergen:
+        try:
+            st.session_state.current_allergens = get_my_allergens()
+        except Exception:
+            st.session_state.current_allergens = []
+
+        st.subheader("My Allergens")
+        if st.session_state.current_allergens:
+            badges = " ".join(
+                f'<span style="' f"background:#FF4B4B22; color:#FF4B4B; border:1px solid #FF48B4B55;" f"padding:2px 10px; border-radius:999px; font-size:0.85rem;" f'">{a}</span>'
+                for a in st.session_state.current_allergens
+            )
+            st.markdown(badges, unsafe_allow_html=True)
         else:
-            st.info("No allergens set.")
+            st.info("You have no allergens set.")
 
-        if "show_allergen_edit" not in st.session_state:
-            st.session_state.show_allergen_edit = False
+        with st.expander("Add or remove allergens", expanded=False):
+            available = [a for a in ALLERGEN_OPTIONS if a not in st.session_state.current_allergens]
 
-        if st.button("Edit My Allergens", key="profile_edit_allergens_btn", use_container_width=True):
-            st.session_state.show_allergen_edit = not st.session_state.show_allergen_edit
-
-        if st.session_state.show_allergen_edit:
-            available = [a for a in ALLERGEN_OPTIONS if a not in current_allergens]
-            removable = current_allergens
-
+            # Add allergens section
             if available:
                 st.write("**Add allergens:**")
-                to_add = []
-                cols = st.columns(3)
-                for i, allergen in enumerate(available):
-                    with cols[i % 3]:
-                        if st.checkbox(allergen, key=f"add_{allergen}"):
-                            to_add.append(allergen)
-                if st.button("Add selected", key="add_allergens_btn"):
-                    if to_add:
-                        try:
-                            add_allergens(to_add)
-                            st.success(f"Added: {', '.join(to_add)}")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(str(e))
-                    else:
-                        st.warning("No allergens selected")
+                to_add = st.multiselect("Select allergens to add", options=available, key="add_allergens_multiselect", label_visibility="collapsed")
+                if st.button("Add Selected", key="add_allergens_btn", use_container_width=True, disabled=not to_add):
+                    try:
+                        add_allergens(to_add)
+                        st.session_state.current_allergens += to_add
+                        st.rerun()
+                    except Exception:
+                        st.error("Failed to add allergen. Please try again")
+            else:
+                st.info("All allergens already added")
 
-            if removable:
+            # Remove allergens section
+            if st.session_state.current_allergens:
                 st.write("**Remove allergens:**")
-                to_remove = []
-                cols = st.columns(3)
-                for i, allergen in enumerate(removable):
-                    with cols[i % 3]:
-                        if st.checkbox(allergen, key=f"remove_{allergen}"):
-                            to_remove.append(allergen)
-                if st.button("Remove selected", key="remove_allergens_btn"):
-                    if to_remove:
-                        try:
-                            delete_allergens(to_remove)
-                            st.success(f"Removed: {', '.join(to_remove)}")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(str(e))
-                    else:
-                        st.warning("No allergens selected")
+                to_remove = st.multiselect("Select allergens to remove", options=st.session_state.current_allergens, key="remove_allergens_multiselect", label_visibility="collapsed")
+                if st.button("Remove Selected", key="remove_allergens_btn", use_container_width=True, disabled=not to_remove):
+                    try:
+                        delete_allergens(to_remove)
+                        st.session_state.current_allergens = [x for x in st.session_state.current_allergens if x not in to_remove]
+                        st.session_state.active_dialog = "user_profile"
+                        st.rerun()
+                    except Exception:
+                        st.error("Failed to remove allergen. Please try again")
+            else:
+                st.info("No allergens to remove")
 
-    st.divider()
+        st.divider()
 
-    # Household Allergens (owner/co-owner only)
-    with st.expander("**Household Allergens**", expanded=True):
+        # Household Allergens (owner/co-owner only)
+        st.subheader("Household Allergens")
         if not user.get("household_id"):
             st.info("You are not part of a household.")
         elif is_owner or is_co_owner:
@@ -216,8 +247,13 @@ def profile_dialog() -> None:
                         allergens = entry.get("allergens", [])
                         if allergens:
                             has_any = True
-                            name = member_map.get(entry.get("user_id"), f"User {entry.get('user_id')}")
-                            st.write(f"**{name.title()}**: {', '.join(allergens)}")
+                            member_name = member_map.get(entry.get("user_id"), f"User {entry.get('user_id')}")
+                            st.write(f"**{member_name.title()}**")
+                            badges = " ".join(
+                                f'<span style="' f"background:#FF4B4B22; color:#FF4B4B; border:1px solid #FF48B4B55;" f"padding:2px 10px; border-radius:999px; font-size:0.85rem;" f'">{a}</span>'
+                                for a in allergens
+                            )
+                            st.markdown(badges, unsafe_allow_html=True)
                     if not has_any:
                         st.info("No household members have allergens set.")
             except Exception as e:
