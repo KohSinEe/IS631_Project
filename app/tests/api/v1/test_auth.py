@@ -27,20 +27,21 @@ def test_register_success(client: TestClient, db) -> None:
     assert "password" not in data
 
 
-def test_register_with_household(client: TestClient, db) -> None:
-    """Registration can create a new household."""
-    r = client.post(
-        f"{settings.API_V1_STR}/auth/register",
-        json={
-            "email": "household@example.com",
-            "password": "Password_1",
-            "password_confirm": "Password_1",
-            "household_name": "My Household",
-        },
-    )
-    assert r.status_code == 201
-    data = r.json()
-    assert data["household_id"] is not None
+# Test below no longer required, since it's not a requirement to create household during registration anymore.
+# def test_register_with_household(client: TestClient, db) -> None:
+#     """Registration can create a new household."""
+#     r = client.post(
+#         f"{settings.API_V1_STR}/auth/register",
+#         json={
+#             "email": "household@example.com",
+#             "password": "Password_1",
+#             "password_confirm": "Password_1",
+#             #"household_name": "My Household",
+#         },
+#     )
+#     assert r.status_code == 201
+#     data = r.json()
+#     assert data["household_id"] == None
 
 
 def test_register_duplicate_email(client: TestClient, create_test_user: User) -> None:

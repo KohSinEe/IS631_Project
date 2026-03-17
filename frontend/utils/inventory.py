@@ -1,9 +1,9 @@
-import streamlit as st
-from services.inventory import fetch_inventory
-from typing import Any, Dict, List
 from datetime import date, datetime, timedelta
+from typing import Any, Dict, List
 
+import streamlit as st
 from config.settings import EXPIRY_ALERT_DAYS
+from services.inventory import fetch_inventory
 
 
 def parse_expiry(raw_value: str) -> date:
@@ -99,9 +99,7 @@ def show_expiry_notifications(items: List[Dict[str, Any]]) -> None:
         if overdue:
             st.error(f"🚨 {overdue} item(s) have already expired!")
         if expiring_items:
-            st.warning(
-                f"⚠️ {len(expiring_items)} item(s) expiring within {EXPIRY_ALERT_DAYS} days"
-            )
+            st.warning(f"⚠️ {len(expiring_items)} item(s) expiring within {EXPIRY_ALERT_DAYS} days")
 
     # Toasts — shown once per login session
     if not st.session_state.get("expiry_toasts_shown"):

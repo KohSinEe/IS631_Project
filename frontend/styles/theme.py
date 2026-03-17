@@ -2,6 +2,7 @@
 Friendly, light theme for FridgeBuddy.
 Warm cream background, soft greens and coral accents, rounded typography.
 """
+
 CUSTOM_STYLE = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');

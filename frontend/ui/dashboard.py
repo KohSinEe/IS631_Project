@@ -1,7 +1,7 @@
-import streamlit as st
-from typing import Any, Dict, List
 from datetime import date, timedelta
-
+from typing import Any, Dict, List
+import streamlit as st
+from config.settings import CATEGORY_OPTIONS, EXPIRY_ALERT_DAYS
 from config.settings import EXPIRY_ALERT_DAYS, CATEGORY_OPTIONS, UNIT_OPTIONS, ALLERGEN_OPTIONS, CATEGORY_DEFAULT_EXPIRY_DAYS
 from utils.inventory import (
     parse_expiry,
@@ -11,14 +11,28 @@ from utils.inventory import (
 )
 from services.user import logout_user, update_user, delete_household, get_current_user, change_password
 from services.client import APIError
-from services.inventory import create_inventory_item
 from services.invitations import (
-    fetch_my_invitations,
-    fetch_household_members,
-    fetch_household_invites,
-    create_invite,
     accept_invitation,
     decline_invitation,
+    fetch_household_invites,
+    fetch_household_members,
+    fetch_my_invitations,
+)
+from services.user import get_current_user
+from ui.dialogs import (
+    add_item_dialog,
+    delete_fridge_dialog,
+    edit_item_dialog,
+    invitation_notification_dialog,
+    invite_user_dialog,
+    logout_dialog,
+    profile_dialog,
+)
+from utils.inventory import (
+    ensure_inventory_loaded,
+    filter_inventory,
+    parse_expiry,
+    summarize_inventory,
 )
 
 from services.user import get_my_allergens, add_allergens, delete_allergens
@@ -273,14 +287,8 @@ def delete_fridge_dialog(household_id: int) -> None:
 
 def render_header() -> None:
     user = st.session_state.user or {}
-    if "show_profile_dialog" not in st.session_state:
-        st.session_state.show_profile_dialog = False
-    if "show_logout_dialog" not in st.session_state:
-        st.session_state.show_logout_dialog = False
-    if "show_delete_fridge_dialog" not in st.session_state:
-        st.session_state.show_delete_fridge_dialog = False
-    if "show_invite_dialog" not in st.session_state:
-        st.session_state.show_invite_dialog = False
+    household_id = user.get("household_id")
+    is_owner = user.get("is_household_owner")
 
     header_left, header_right = st.columns([8, 2])
 
@@ -300,38 +308,18 @@ def render_header() -> None:
         st.markdown("<div style='margin-top: 1.5rem'></div>", unsafe_allow_html=True)
 
         with st.popover("Account"):
-            if st.button("Profile", key="header_profile_btn", use_container_width=True):
-                st.session_state.show_profile_dialog = True
-                st.session_state.show_invite_dialog = False
-                st.session_state.show_delete_fridge_dialog = False
-                st.session_state.show_logout_dialog = False
-            if (
-                user.get("household_id")
-                and user.get("is_household_owner")
-                and st.button("Invite to fridge", key="header_invite_btn", use_container_width=True)
-            ):
-                st.session_state.show_invite_dialog = True
-                st.session_state.show_profile_dialog = False
-                st.session_state.show_delete_fridge_dialog = False
-                st.session_state.show_logout_dialog = False
-            if (
-                user.get("household_id")
-                and user.get("is_household_owner")
-                and st.button(
-                    "Delete fridge", key="header_delete_fridge_btn", use_container_width=True
-                )
-            ):
-                st.session_state.show_delete_fridge_dialog = True
-                st.session_state.show_profile_dialog = False
-                st.session_state.show_invite_dialog = False
-                st.session_state.show_logout_dialog = False
-            if st.button(
-                "Sign out", key="header_signout_btn", type="secondary", use_container_width=True
-            ):
-                st.session_state.show_logout_dialog = True
-                st.session_state.show_profile_dialog = False
-                st.session_state.show_invite_dialog = False
-                st.session_state.show_delete_fridge_dialog = False
+            if st.button("Profile", key="header_profile_btn", use_container_width=True) or st.session_state.active_dialog == "user_profile":
+                st.session_state.active_dialog = "user_profile"
+                profile_dialog()
+            if household_id and is_owner and (st.button("Invite to fridge", key="header_invite_btn", use_container_width=True) or st.session_state.active_dialog == "invite_user"):
+                st.session_state.active_dialog = "invite_user"
+                invite_user_dialog()
+            if household_id and is_owner and (st.button("Delete fridge", key="header_delete_fridge_btn", use_container_width=True) or st.session_state.active_dialog == "delete_fridge"):
+                st.session_state.active_dialog = "delete_fridge"
+                delete_fridge_dialog()
+            if st.button("Sign out", key="header_signout_btn", type="secondary", use_container_width=True) or st.session_state.active_dialog == "logout":
+                st.session_state.active_dialog = "logout"
+                logout_dialog()
 
 
 def render_metric(label: str, value: Any, column: st.delta_generator.DeltaGenerator, color: str) -> None:
@@ -401,83 +389,28 @@ def render_inventory_table(items: List[Dict[str, Any]], sort_by_expiry: bool) ->
     return working
 
 
-def handle_add_item() -> None:
-    # Category lives outside the form so changes trigger a rerun and update the help text.
-    category = st.selectbox("Category", options=CATEGORY_OPTIONS, key="create_category")
-
-    days = CATEGORY_DEFAULT_EXPIRY_DAYS.get(category, 30)
-
-    with st.form("add_item_form"):
-        st.subheader("Add to pantry")
-        name = st.text_input("Item", key="create_name")
-        quantity = st.number_input("Quantity", min_value=0, step=1, value=1, key="create_quantity")
-        unit = st.selectbox("Unit", options=UNIT_OPTIONS, key="create_unit")
-        expiry = st.date_input(
-            "Expiry Date",
-            value=None,
-            min_value=date.today(),
-            format="DD/MM/YYYY",
-            key="create_expiry",
-            help=f"Leave blank to auto-estimate for {category} ({days} days).",
-        )
-        submitted = st.form_submit_button("Save item")
-
-    if submitted:
-        if not name:
-            st.error("Item name is required")
-            return
-        if expiry is None:
-            expiry = date.today() + timedelta(days=days)
-        data = {
-            "name": name,
-            "quantity": int(quantity),
-            "unit": unit,
-            "expiry_date": expiry.isoformat(),
-            "category": category,
-        }
-        try:
-            create_inventory_item(data)
-            st.success("Item added")
-            st.session_state.inventory_dirty = True
-            st.rerun()
-        except APIError as err:
-            st.error(err.message)
-
-
-@st.dialog("AddItem")
-def add_item_dialog() -> None:
-    tab1, tab2, tab3 = st.tabs(["Manual Entry", "Barcode Scan", "Photo Scan"])
-
-    with tab1:
-        handle_add_item()
-    with tab2:
-        handle_barcode_scan()
-    with tab3:
-        from ui.image_scan import handle_image_scan
-
-        handle_image_scan()
-
-
-@st.dialog("EditItem")
-def edit_item_dialog(sorted_items) -> None:
-    handle_quick_actions(sorted_items)
-
-
 def render_dashboard() -> None:
-    if "show_add_item_dialog" not in st.session_state:
-        st.session_state.show_add_item_dialog = False
-    if "show_edit_item_dialog" not in st.session_state:
-        st.session_state.show_edit_item_dialog = False
+    user = st.session_state.get("user") or {}
+
+    ensure_inventory_loaded()
 
     render_header()
+
+    if "flash_success" in st.session_state:
+        st.success(st.session_state.flash_success)
+        del st.session_state.flash_success
 
     nav_col1, nav_col2 = st.columns(2)
     with nav_col1:
         if st.button("Stocktake", use_container_width=True):
+            st.session_state.active_dialog = None
             st.session_state.page = "stocktake"
+            st.rerun()
     with nav_col2:
         if st.button("Usage Overview", use_container_width=True):
+            st.session_state.active_dialog = None
             st.session_state.page = "usage"
+            st.rerun()
 
     # Pending invitations: fetch early so we can open at most one dialog per run
     try:
@@ -490,29 +423,8 @@ def render_dashboard() -> None:
     if "invitation_popup_dismissed" not in st.session_state:
         st.session_state.invitation_popup_dismissed = False
 
-    # Open at most one dialog per run (Streamlit allows only one dialog at a time)
-    user = st.session_state.get("user") or {}
-    household_id_for_dialog = st.session_state.get("household_id")
-    dialog_opened_this_run = False
-    if st.session_state.get("show_logout_dialog"):
-        logout_dialog()
-        dialog_opened_this_run = True
-    elif st.session_state.get("show_profile_dialog"):
-        profile_dialog()
-        dialog_opened_this_run = True
-    elif st.session_state.get("show_delete_fridge_dialog") and household_id_for_dialog:
-        delete_fridge_dialog(household_id_for_dialog)
-        dialog_opened_this_run = True
-    elif (
-        st.session_state.get("show_invite_dialog")
-        and household_id_for_dialog
-        and user.get("is_household_owner")
-    ):
-        invite_user_dialog(household_id_for_dialog)
-        dialog_opened_this_run = True
-    elif pending and not st.session_state.invitation_popup_dismissed:
+    if pending and not st.session_state.invitation_popup_dismissed:
         invitation_notification_dialog(pending)
-        dialog_opened_this_run = True
 
     if pending:
         st.markdown("### Pending invitations")
@@ -522,15 +434,11 @@ def render_dashboard() -> None:
             inv_id = inv.get("id")
             if inv_id is None:
                 continue
-            st.write(
-                f"**{inv.get('household_name', 'Fridge')}** — {inviter} invited you as **{role_label}**."
-            )
+            st.write(f"**{inv.get('household_name', 'Fridge')}** — {inviter} invited you as **{role_label}**.")
             col1, col2, _ = st.columns([1, 1, 4])
             with col1:
                 if st.button("Accept", key=f"accept_inv_{inv_id}"):
-                    st.session_state.show_invite_dialog = (
-                        False  # Avoid opening "Invite to fridge" after accept
-                    )
+                    st.session_state.active_dialog = None  # Avoid opening "Invite to fridge" after accept
                     try:
                         accept_invitation(inv_id)
                         get_current_user()
@@ -576,7 +484,6 @@ def render_dashboard() -> None:
         st.divider()
 
     # Owner: invitation status (accepted / declined / pending) so they see when someone responds
-    user = st.session_state.user or {}
     if user.get("is_household_owner"):
         try:
             sent_invites = fetch_household_invites(household_id)
@@ -608,14 +515,12 @@ def render_dashboard() -> None:
 
     with add_item_col:
         if st.button("Add Item", use_container_width=True):
-            st.session_state.show_add_item_dialog = True
-            if st.session_state.show_add_item_dialog and not dialog_opened_this_run:
-                add_item_dialog()
+            st.session_state.active_dialog = "add_item"
+            add_item_dialog()
     with edit_item_col:
-        if st.button("Edit Items", use_container_width=True):
-            st.session_state.show_edit_item_dialog = True
-            if st.session_state.show_edit_item_dialog and not dialog_opened_this_run:
-                edit_item_dialog(st.session_state.filtered_inventory)
+        if st.button("Edit Items", use_container_width=True) or st.session_state.active_dialog == "edit_item":
+            st.session_state.active_dialog = "edit_item"
+            edit_item_dialog(st.session_state.filtered_inventory)
 
     st.divider()
 
@@ -629,7 +534,6 @@ def render_dashboard() -> None:
     )
     st.session_state.inventory_only = inventory_only
 
-    user = st.session_state.user or {}
     if user.get("household_id"):
         cooking_for = st.radio(
             "Who are you cooking for?",

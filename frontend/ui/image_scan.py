@@ -1,13 +1,13 @@
-import streamlit as st
-import requests
 import base64
-from PIL import Image
 import io
-from datetime import datetime, timedelta
 import os
+from datetime import datetime
 
-from services.inventory import create_inventory_item
+import requests
+import streamlit as st
 from config.settings import CATEGORY_OPTIONS, UNIT_OPTIONS
+from PIL import Image
+from services.inventory import create_inventory_item
 
 # environment variables should already be loaded by frontend/app.py; just read
 VISION_API_KEY = os.getenv("VISION_API_KEY")
@@ -40,11 +40,7 @@ def handle_image_scan() -> None:
     # call the Vision API
     encoded_image = base64.b64encode(file_bytes).decode()
     url = f"https://vision.googleapis.com/v1/images:annotate?key={VISION_API_KEY}"
-    body = {
-        "requests": [
-            {"image": {"content": encoded_image}, "features": [{"type": "LABEL_DETECTION"}]}
-        ]
-    }
+    body = {"requests": [{"image": {"content": encoded_image}, "features": [{"type": "LABEL_DETECTION"}]}]}
     response = requests.post(url, json=body)
     if response.status_code != 200:
         st.error(f"Vision API request failed ({response.status_code})")
@@ -52,7 +48,7 @@ def handle_image_scan() -> None:
         return
     result = response.json()
     labels = result.get("responses", [{}])[0].get("labelAnnotations", [])
-    detected_foods = [(l["description"], l["score"]) for l in labels if l.get("score", 0) > 0.3]
+    detected_foods = [(l["description"], l["score"]) for l in labels if l.get("score", 0) > 0.9]
     detected_foods.sort(key=lambda x: x[1], reverse=True)
     food_names = [name for name, _ in detected_foods]
 
@@ -78,7 +74,7 @@ def handle_image_scan() -> None:
     purchase_date = st.date_input("Purchase date", datetime.today())
 
     # suggest an expiry based on the selected food name where possible
-    from utils.inventory import suggest_expiry_for_name, FOOD_TO_CATEGORY
+    from utils.inventory import FOOD_TO_CATEGORY, suggest_expiry_for_name
 
     default_expiry = suggest_expiry_for_name(selected_food, purchase_date)
     expiry = st.date_input("Expiry date", default_expiry)
@@ -93,11 +89,7 @@ def handle_image_scan() -> None:
     category = st.selectbox(
         "Category",
         CATEGORY_OPTIONS,
-        index=(
-            CATEGORY_OPTIONS.index(default_cat)
-            if default_cat in CATEGORY_OPTIONS
-            else CATEGORY_OPTIONS.index("Other")
-        ),
+        index=(CATEGORY_OPTIONS.index(default_cat) if default_cat in CATEGORY_OPTIONS else CATEGORY_OPTIONS.index("Other")),
     )
 
     if st.button("Add to inventory"):

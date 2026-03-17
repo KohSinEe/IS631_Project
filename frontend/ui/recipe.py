@@ -1,6 +1,6 @@
 import streamlit as st
 from services.inventory import fetch_inventory
-from services.recipe import generate_recipe, cook_recipe
+from services.recipe import cook_recipe, generate_recipe
 
 
 def display_recipes(result):
@@ -37,13 +37,17 @@ def display_recipes(result):
             if missing:
                 st.warning("This recipe cannot be cooked yet because some ingredients are missing.")
             else:
-                if st.button("Cook", key=f"cook_{idx}"):
+                st.caption("Finished cooking? Click below to deduct the ingredients used.")
+                if st.button("Cooked!", key=f"cook_{idx}"):
                     try:
                         cook_recipe(recipe)
-                        st.success("Ingredients deducted from fridge.")
+                        st.session_state.flash_success = "Ingredients deducted from fridge."
+                        st.session_state.inventory_dirty = True
+                        st.session_state.category_filter = "All"
+                        st.session_state.page = "dashboard"
                         st.rerun()
                     except Exception as e:
-                        st.error(f"Failed to cook recipe: {e}")
+                        st.error(f"Failed to deduct ingredients: {e}")
 
 
 def handle_generate_recipe():

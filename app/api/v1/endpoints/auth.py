@@ -61,7 +61,7 @@ def register(user_in: UserCreate, db: DatabaseDep):
     - **email**: Valid email address
     - **password**: At least 8 characters
     - **name**: Optional display name
-    - **household_name**: Optional household name (creates new household)
+    - **household_name**: Optional household name (creates new household) - Feature removed, household creation is now separate endpoint. Users can be created without household and join later.
     """
     # Check if user already exists
     existing_user = db.query(User).filter(User.email == user_in.email).first()
@@ -89,18 +89,12 @@ def register(user_in: UserCreate, db: DatabaseDep):
         name=user_in.name,
         hashed_password=get_password_hash(user_in.password),
         cognito_sub=cognito_sub,
-        household_id=household_id,
+        household_id=None,
         is_active=True,
     )
 
     db.add(user)
     db.flush()  # Get user.id
-
-    # Set household owner when user created the household
-    if household_id and user.household_id:
-        household = db.query(Household).filter(Household.id == household_id).first()
-        if household:
-            household.owner_id = user.id
 
     db.commit()
     db.refresh(user)

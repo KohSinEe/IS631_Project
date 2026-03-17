@@ -1,4 +1,5 @@
 import streamlit as st
+from ui.dialogs import reset_password_dialog, sign_in_dialog, sign_up_dialog
 from services.user import login_user, register_user
 from services.client import APIError
 
@@ -151,39 +152,19 @@ def render_public_view() -> None:
         st.session_state.sign_in_form_data = {"email": "", "password": ""}
 
     st.markdown(
-        "<div class='landing-hero'>"
-        "<h1>🥕 FridgeBuddy</h1>"
-        "<p class='landing-tagline'>Stop guessing. Start managing.</p>"
-        "</div>",
+        "<div class='landing-hero'>" "<h1>🥕 FridgeBuddy</h1>" "<p class='landing-tagline'>Stop guessing. Start managing.</p>" "</div>",
         unsafe_allow_html=True,
     )
     st.markdown("<br>", unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([2, 3, 2])
     with col2:
-        # Only allow one dialog or form at a time
-        if st.button("Sign In", key="landing_signin", use_container_width=True):
-            st.session_state.show_sign_in_form = True
-            st.session_state.show_sign_up_form = False
-            st.session_state.show_sign_up_verification = False
-            st.session_state.show_pw_reset = False
-        if st.button("Sign Up", key="landing_signup", use_container_width=True):
-            st.session_state.show_sign_up_form = True
-            st.session_state.show_sign_in_form = False
-            st.session_state.show_sign_up_verification = False
-            st.session_state.show_pw_reset = False
-        if st.button("Forgot Password?", key="landing_forgotpw", use_container_width=True):
-            st.session_state.show_pw_reset = True
-            st.session_state.show_sign_in_form = False
-            st.session_state.show_sign_up_form = False
-            st.session_state.show_sign_up_verification = False
-
-        # Only show one dialog or form at a time
-        if st.session_state.get("show_sign_in_form"):
+        if st.button("Sign In", key="landing_signin", use_container_width=True) or st.session_state.active_dialog == "sign_in":
+            st.session_state.active_dialog = "sign_in"
             sign_in_dialog()
-        elif st.session_state.get("show_sign_up_form"):
+        if st.button("Sign Up", key="landing_signup", use_container_width=True) or st.session_state.active_dialog == "sign_up":
+            st.session_state.active_dialog = "sign_up"
             sign_up_dialog()
-        elif st.session_state.get("show_sign_up_verification"):
-            sign_up_verification_form()
-        elif st.session_state.get("show_pw_reset"):
-            reset_password_form()
+        if st.button("Forgot Password?", key="landing_forgotpw", use_container_width=True) or st.session_state.active_dialog == "forget_pw":
+            st.session_state.active_dialog = "forget_pw"
+            reset_password_dialog()

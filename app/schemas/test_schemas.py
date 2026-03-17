@@ -26,12 +26,10 @@ def test_user_create_valid() -> None:
         password="Password_123",
         password_confirm="Password_123",
         name="Test",
-        household_name="Home",
     )
     assert u.email == "user@example.com"
     assert u.password == "Password_123"
     assert u.name == "Test"
-    assert u.household_name == "Home"
 
 
 def test_user_create_password_too_short() -> None:

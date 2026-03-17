@@ -1,8 +1,8 @@
-from typing import Optional, Any, Dict
+from typing import Any, Dict, Optional
+
 import streamlit as st
 from services.client import APIError, api_request, get_api_client
 from state.session import reset_session
-from config.settings import ALLERGEN_OPTIONS
 
 
 def register_user(
@@ -95,9 +95,7 @@ def reset_password(email: str, new_password: str) -> None:
     try:
         response = api_request("post", "/users/reset-password", json=payload)
         print(f"Password reset response: {response}")
-        if not response or (
-            isinstance(response, dict) and response.get("message") != "Password reset successful"
-        ):
+        if not response or (isinstance(response, dict) and response.get("message") != "Password reset successful"):
             st.error("Password reset failed. Please check your email and try again.")
         else:
             st.success("Password reset successful. Please sign in.")
@@ -152,6 +150,16 @@ def delete_household(household_id: int) -> None:
     if st.session_state.user and isinstance(st.session_state.user, dict):
         st.session_state.user["household_id"] = None
         st.session_state.user["is_household_owner"] = False
+
+
+def create_household(name: str) -> Dict[str, Any]:
+    result = api_request("post", "/households", json={"name": name})
+    if isinstance(result, dict):
+        st.session_state.household_id = result.get("id")
+        if st.session_state.user:
+            st.session_state.user["household_id"] = result.get("id")
+            st.session_state.user["is_household_owner"] = True
+    return result
 
 
 # Allergens related:
