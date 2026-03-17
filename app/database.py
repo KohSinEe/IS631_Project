@@ -34,9 +34,7 @@ def apply_startup_schema_patches() -> None:
         if not table_exists:
             return
 
-        cols = {
-            row[1] for row in conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()
-        }
+        cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()}
 
         if "cognito_sub" not in cols:
             conn.exec_driver_sql("ALTER TABLE users ADD COLUMN cognito_sub VARCHAR(255)")

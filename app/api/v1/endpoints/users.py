@@ -65,7 +65,9 @@ def change_password(
     - **new_password**: New password (min 8 characters)
     """
     if settings.is_cognito_enabled:
-        cognito_change_password(token, password_change.current_password, password_change.new_password)
+        cognito_change_password(
+            token, password_change.current_password, password_change.new_password
+        )
         return {"message": "Password updated successfully"}
 
     # Verify current password

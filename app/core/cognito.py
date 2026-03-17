@@ -98,7 +98,11 @@ def cognito_confirm_sign_up(email: str, confirmation_code: str) -> None:
     try:
         client.confirm_sign_up(**request)
     except Exception as exc:
-        message = getattr(exc, "response", {}).get("Error", {}).get("Message", "Sign-up confirmation failed")
+        message = (
+            getattr(exc, "response", {})
+            .get("Error", {})
+            .get("Message", "Sign-up confirmation failed")
+        )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message) from exc
 
 
@@ -116,7 +120,11 @@ def cognito_resend_sign_up_code(email: str) -> None:
     try:
         client.resend_confirmation_code(**request)
     except Exception as exc:
-        message = getattr(exc, "response", {}).get("Error", {}).get("Message", "Failed to resend verification code")
+        message = (
+            getattr(exc, "response", {})
+            .get("Error", {})
+            .get("Message", "Failed to resend verification code")
+        )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message) from exc
 
 
@@ -164,10 +172,14 @@ def cognito_login(email: str, password: str) -> Dict[str, str]:
             try:
                 response = _initiate_admin_user_password()
             except Exception as fallback_exc:
-                fallback_msg = getattr(fallback_exc, "response", {}).get("Error", {}).get(
-                    "Message", "Login failed"
+                fallback_msg = (
+                    getattr(fallback_exc, "response", {})
+                    .get("Error", {})
+                    .get("Message", "Login failed")
                 )
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=fallback_msg) from fallback_exc
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail=fallback_msg
+                ) from fallback_exc
         else:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=message) from exc
 
@@ -177,7 +189,9 @@ def cognito_login(email: str, password: str) -> Dict[str, str]:
     id_token = auth_result.get("IdToken")
 
     if not access_token or not id_token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Cognito auth response")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Cognito auth response"
+        )
 
     return {
         "access_token": access_token,
@@ -199,7 +213,9 @@ def cognito_global_sign_out(access_token: str) -> None:
         return
 
 
-def cognito_change_password(access_token: str, previous_password: str, proposed_password: str) -> None:
+def cognito_change_password(
+    access_token: str, previous_password: str, proposed_password: str
+) -> None:
     client = _cognito_client()
     if not access_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing access token")
@@ -211,7 +227,9 @@ def cognito_change_password(access_token: str, previous_password: str, proposed_
             ProposedPassword=proposed_password,
         )
     except Exception as exc:
-        message = getattr(exc, "response", {}).get("Error", {}).get("Message", "Password change failed")
+        message = (
+            getattr(exc, "response", {}).get("Error", {}).get("Message", "Password change failed")
+        )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message) from exc
 
 
@@ -229,7 +247,11 @@ def cognito_forgot_password_start(email: str) -> None:
     try:
         client.forgot_password(**request)
     except Exception as exc:
-        message = getattr(exc, "response", {}).get("Error", {}).get("Message", "Password reset request failed")
+        message = (
+            getattr(exc, "response", {})
+            .get("Error", {})
+            .get("Message", "Password reset request failed")
+        )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message) from exc
 
 
@@ -249,7 +271,11 @@ def cognito_forgot_password_confirm(email: str, confirmation_code: str, new_pass
     try:
         client.confirm_forgot_password(**request)
     except Exception as exc:
-        message = getattr(exc, "response", {}).get("Error", {}).get("Message", "Password reset confirmation failed")
+        message = (
+            getattr(exc, "response", {})
+            .get("Error", {})
+            .get("Message", "Password reset confirmation failed")
+        )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message) from exc
 
 
@@ -269,7 +295,9 @@ def verify_cognito_token(token: str, token_use: str = "access") -> Dict[str, Any
     try:
         headers = jwt.get_unverified_header(token)
     except JWTError as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token header") from exc
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token header"
+        ) from exc
 
     kid = headers.get("kid")
     if not kid:
@@ -278,7 +306,9 @@ def verify_cognito_token(token: str, token_use: str = "access") -> Dict[str, Any
     jwks = _fetch_jwks()
     key = next((k for k in jwks.get("keys", []) if k.get("kid") == kid), None)
     if not key:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unknown token signing key")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Unknown token signing key"
+        )
 
     try:
         claims = jwt.decode(
@@ -289,7 +319,9 @@ def verify_cognito_token(token: str, token_use: str = "access") -> Dict[str, Any
             options={"verify_aud": False},
         )
     except JWTError as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token") from exc
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
+        ) from exc
 
     actual_token_use = claims.get("token_use")
     if actual_token_use != token_use:
@@ -297,9 +329,13 @@ def verify_cognito_token(token: str, token_use: str = "access") -> Dict[str, Any
 
     if token_use == "id":
         if claims.get("aud") != settings.COGNITO_APP_CLIENT_ID:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token audience")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token audience"
+            )
     else:
         if claims.get("client_id") != settings.COGNITO_APP_CLIENT_ID:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token client id")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token client id"
+            )
 
     return claims

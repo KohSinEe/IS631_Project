@@ -40,7 +40,9 @@ def test_confirm_signup_cognito_calls_helper(client: TestClient, cognito_mode, m
     assert calls == {"email": "verify@example.com", "code": "123456"}
 
 
-def test_resend_confirmation_cognito_calls_helper(client: TestClient, cognito_mode, monkeypatch) -> None:
+def test_resend_confirmation_cognito_calls_helper(
+    client: TestClient, cognito_mode, monkeypatch
+) -> None:
     calls = {}
 
     def _fake_resend(email: str) -> None:
@@ -57,7 +59,9 @@ def test_resend_confirmation_cognito_calls_helper(client: TestClient, cognito_mo
     assert calls == {"email": "verify@example.com"}
 
 
-def test_register_cognito_sets_cognito_sub(client: TestClient, db, cognito_mode, monkeypatch) -> None:
+def test_register_cognito_sets_cognito_sub(
+    client: TestClient, db, cognito_mode, monkeypatch
+) -> None:
     monkeypatch.setattr(
         auth_endpoints,
         "cognito_sign_up",
@@ -80,7 +84,9 @@ def test_register_cognito_sets_cognito_sub(client: TestClient, db, cognito_mode,
     assert user.cognito_sub == "sub-abc-123"
 
 
-def test_login_cognito_creates_local_user(client: TestClient, db, cognito_mode, monkeypatch) -> None:
+def test_login_cognito_creates_local_user(
+    client: TestClient, db, cognito_mode, monkeypatch
+) -> None:
     monkeypatch.setattr(
         auth_endpoints,
         "cognito_login",
@@ -149,7 +155,9 @@ def test_change_password_cognito_calls_helper(
     }
 
 
-def test_reset_password_request_cognito_calls_helper(client: TestClient, cognito_mode, monkeypatch) -> None:
+def test_reset_password_request_cognito_calls_helper(
+    client: TestClient, cognito_mode, monkeypatch
+) -> None:
     calls = {}
 
     def _fake_start(email: str) -> None:
@@ -166,7 +174,9 @@ def test_reset_password_request_cognito_calls_helper(client: TestClient, cognito
     assert calls == {"email": "forgot@example.com"}
 
 
-def test_reset_password_confirm_cognito_calls_helper(client: TestClient, cognito_mode, monkeypatch) -> None:
+def test_reset_password_confirm_cognito_calls_helper(
+    client: TestClient, cognito_mode, monkeypatch
+) -> None:
     calls = {}
 
     def _fake_confirm(email: str, confirmation_code: str, new_password: str) -> None:
