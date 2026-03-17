@@ -1,0 +1,8 @@
+project_name         = "fridgebuddy-demo"
+aws_region           = "ap-southeast-1"
+instance_type        = "t3.micro"
+key_name             = ""
+admin_cidr           = "103.252.200.33/32"
+repo_url             = "https://github.com/KohSinEe/IS631_Project.git"
+repo_branch          = "feature/aws_cognito"
+secrets_manager_arn  = "arn:aws:secretsmanager:ap-southeast-1:025581116416:secret:Cognito_credentials-o5RhWe"
