@@ -45,6 +45,7 @@ def test_register_without_household_success(client: TestClient, db) -> None:
     assert data["email"] == "nohouse@example.com"
     assert data["household_id"] is None
 
+
 def test_register_duplicate_email(client: TestClient, create_test_user: User) -> None:
     """Duplicate email returns 400."""
     r = client.post(
