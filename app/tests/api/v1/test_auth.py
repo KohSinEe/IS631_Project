@@ -16,6 +16,7 @@ def test_register_success(client: TestClient, db) -> None:
             "password": "Secure_12",
             "password_confirm": "Secure_12",
             "name": "New User",
+            "household_name": "New User Household",
         },
     )
     assert r.status_code == 201
@@ -23,26 +24,26 @@ def test_register_success(client: TestClient, db) -> None:
     assert data["email"] == "newuser@example.com"
     assert data["name"] == "New User"
     assert data["is_active"] is True
+    assert data["household_id"] is not None
     assert "hashed_password" not in data
     assert "password" not in data
 
 
-# Test below no longer required, since it's not a requirement to create household during registration anymore.
-# def test_register_with_household(client: TestClient, db) -> None:
-#     """Registration can create a new household."""
-#     r = client.post(
-#         f"{settings.API_V1_STR}/auth/register",
-#         json={
-#             "email": "household@example.com",
-#             "password": "Password_1",
-#             "password_confirm": "Password_1",
-#             #"household_name": "My Household",
-#         },
-#     )
-#     assert r.status_code == 201
-#     data = r.json()
-#     assert data["household_id"] == None
-
+def test_register_without_household_success(client: TestClient, db) -> None:
+    """New user can register without providing a household name."""
+    r = client.post(
+        f"{settings.API_V1_STR}/auth/register",
+        json={
+            "email": "nohouse@example.com",
+            "password": "Secure_12",
+            "password_confirm": "Secure_12",
+            "name": "No House",
+        },
+    )
+    assert r.status_code == 201
+    data = r.json()
+    assert data["email"] == "nohouse@example.com"
+    assert data["household_id"] is None
 
 def test_register_duplicate_email(client: TestClient, create_test_user: User) -> None:
     """Duplicate email returns 400."""
@@ -53,6 +54,7 @@ def test_register_duplicate_email(client: TestClient, create_test_user: User) ->
             "password": "Another_1",
             "password_confirm": "Another_1",
             "name": "Duplicate",
+            "household_name": "Dup Household",
         },
     )
     assert r.status_code == 400

@@ -75,6 +75,7 @@ def test_register_cognito_sets_cognito_sub(
             "password": "Secure_12",
             "password_confirm": "Secure_12",
             "name": "Cognito User",
+            "household_name": "Cognito Household",
         },
     )
 

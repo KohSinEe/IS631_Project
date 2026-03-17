@@ -7,8 +7,8 @@ from app.dependencies import DatabaseDep
 from app.config import settings
 from app.schemas.auth import Token, ConfirmSignUpRequest, ResendSignUpCodeRequest
 from app.schemas.user import UserCreate, UserResponse
-from app.models.user import User
 from app.models.household import Household
+from app.models.user import User
 from app.core.security import (
     verify_password,
     get_password_hash,
@@ -61,7 +61,7 @@ def register(user_in: UserCreate, db: DatabaseDep):
     - **email**: Valid email address
     - **password**: At least 8 characters
     - **name**: Optional display name
-    - **household_name**: Optional household name (creates new household) - Feature removed, household creation is now separate endpoint. Users can be created without household and join later.
+    - **household_name**: Optional household/fridge name
     """
     # Check if user already exists
     existing_user = db.query(User).filter(User.email == user_in.email).first()
@@ -70,18 +70,16 @@ def register(user_in: UserCreate, db: DatabaseDep):
             status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
         )
 
-    # Create household if provided
-    household_id = None
-    if user_in.household_name:
-        household = Household(name=user_in.household_name)
-        db.add(household)
-        db.flush()  # Get the ID without committing
-        household_id = household.id
-
     cognito_sub = None
     if settings.is_cognito_enabled:
         cognito_result = cognito_sign_up(user_in.email, user_in.password, user_in.name)
         cognito_sub = cognito_result.get("UserSub")
+
+    household = None
+    if user_in.household_name:
+        household = Household(name=user_in.household_name)
+        db.add(household)
+        db.flush()
 
     # Create user (use only password, password_confirm is validated by schema)
     user = User(
@@ -89,12 +87,15 @@ def register(user_in: UserCreate, db: DatabaseDep):
         name=user_in.name,
         hashed_password=get_password_hash(user_in.password),
         cognito_sub=cognito_sub,
-        household_id=None,
+        household_id=household.id if household else None,
         is_active=True,
     )
 
     db.add(user)
     db.flush()  # Get user.id
+
+    if household:
+        household.owner_id = user.id
 
     db.commit()
     db.refresh(user)

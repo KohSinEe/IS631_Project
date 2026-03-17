@@ -15,6 +15,13 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """Schema for creating a user."""
 
+    household_name: Optional[str] = Field(
+        None,
+        min_length=1,
+        max_length=255,
+        description="Optional household/fridge name at registration.",
+    )
+
     password: str = Field(
         ...,
         min_length=8,
@@ -50,6 +57,14 @@ class UserCreate(UserBase):
         if password and v != password:
             raise ValueError("Passwords do not match")
         return v
+
+    @field_validator("household_name")
+    @classmethod
+    def validate_household_name(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        value = v.strip()
+        return value or None
 
 
 class UserUpdate(BaseModel):
