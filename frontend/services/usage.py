@@ -2,7 +2,6 @@ from datetime import date
 from typing import Any, Dict, Optional
 
 import streamlit as st
-
 from services.client import api_request
 
 

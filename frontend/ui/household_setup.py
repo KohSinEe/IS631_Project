@@ -1,9 +1,8 @@
-"""Household setup landing page - shown after login if user has no household."""
-
 import streamlit as st
-from services.user import create_household, logout_user
-from services.invitations import fetch_my_invitations, accept_invitation, decline_invitation
 from services.client import APIError
+from services.invitations import accept_invitation, decline_invitation, fetch_my_invitations
+from services.user import create_household
+from ui.dialogs import invitation_dialog, logout_dialog
 
 
 def _render_create_household() -> None:
@@ -24,33 +23,6 @@ def _render_create_household() -> None:
                 st.rerun()
             except APIError as err:
                 st.error(err.message)
-
-
-@st.dialog("You have a fridge invitation!")
-def _invitation_popup(invites: list) -> None:
-    inv = invites[0]
-    role_label = "Co-owner" if inv.get("role") == "co_owner" else "Child"
-    fridge_name = inv.get("household_name") or "a fridge"
-    st.info(f"You've been invited to join **{fridge_name}** as **{role_label}**.")
-    if len(invites) > 1:
-        st.caption(f"You have {len(invites)} pending invitation(s) total.")
-    if st.button("OK", type="primary", use_container_width=True):
-        st.session_state.invitation_popup_dismissed = True
-        st.rerun()
-
-
-@st.dialog("Sign out")
-def _logout_dialog() -> None:
-    st.write("Are you sure you want to sign out?")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Yes", use_container_width=True):
-            logout_user()
-            st.rerun()
-    with col2:
-        if st.button("No", type="secondary", use_container_width=True):
-            st.session_state.show_household_logout_dialog = False
-            st.rerun()
 
 
 def _render_pending_invitations(invitations: list) -> None:
@@ -110,13 +82,9 @@ def render_household_setup() -> None:
     except Exception:
         pending = []
 
-    if not pending:
-        st.session_state.invitation_popup_dismissed = False
-    if "invitation_popup_dismissed" not in st.session_state:
-        st.session_state.invitation_popup_dismissed = False
-
-    if pending and not st.session_state.invitation_popup_dismissed:
-        _invitation_popup(pending)
+    if pending and not st.session_state.household_setup_invitation_shown:
+        st.session_state.household_setup_invitation_shown = True
+        invitation_dialog(pending)
 
     col1, col2, col3 = st.columns([1, 4, 1])
     with col2:
@@ -124,7 +92,6 @@ def render_household_setup() -> None:
         st.divider()
         _render_pending_invitations(pending)
         st.divider()
-        if st.button("Sign out", use_container_width=True):
-            st.session_state.show_household_logout_dialog = True
-        if st.session_state.get("show_household_logout_dialog"):
-            _logout_dialog()
+        if st.button("Sign out", use_container_width=True) or st.session_state.active_dialog == "logout":
+            st.session_state.active_dialog = "logout"
+            logout_dialog()

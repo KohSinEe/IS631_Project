@@ -1,12 +1,12 @@
-import streamlit as st
+from datetime import date, timedelta
 from typing import Optional
+
 import cv2
 import numpy as np
-from PIL import Image
-from datetime import date, timedelta
-
+import streamlit as st
 from config.settings import CATEGORY_OPTIONS
-from services.barcode import detect_barcodes_in_image, lookup_barcode_product, add_item_from_barcode
+from PIL import Image
+from services.barcode import add_item_from_barcode, detect_barcodes_in_image, lookup_barcode_product
 
 
 def process_uploaded_image(uploaded_file) -> Optional[str]:
@@ -65,9 +65,7 @@ def handle_barcode_scan() -> None:
         camera_image = st.camera_input("Capture barcode", key="barcode_camera_input")
         if camera_image is not None:
             st.image(camera_image, caption="Captured image", use_container_width=True)
-            if st.button(
-                "🔍 Scan captured image", use_container_width=True, key="barcode_scan_camera"
-            ):
+            if st.button("🔍 Scan captured image", use_container_width=True, key="barcode_scan_camera"):
                 with st.spinner("Scanning photo..."):
                     new_barcode = process_uploaded_image(camera_image)
                     if new_barcode:
@@ -87,9 +85,7 @@ def handle_barcode_scan() -> None:
             image = Image.open(uploaded_file)
             st.image(image, caption="Uploaded image", use_container_width=True)
 
-            if st.button(
-                "🔍 Scan image for barcodes", use_container_width=True, key="barcode_scan_image"
-            ):
+            if st.button("🔍 Scan image for barcodes", use_container_width=True, key="barcode_scan_image"):
                 with st.spinner("Scanning image..."):
                     new_barcode = process_uploaded_image(uploaded_file)
                     if new_barcode:
@@ -128,31 +124,19 @@ def handle_barcode_scan() -> None:
             qty = st.number_input("Quantity", min_value=1, value=1, key="barcode_qty")
 
             suggested_expiry_str = product_info.get("suggested_expiry_days")
-            suggested_expiry = (
-                date.fromisoformat(suggested_expiry_str)
-                if suggested_expiry_str
-                else date.today() + timedelta(days=30)
-            )
+            suggested_expiry = date.fromisoformat(suggested_expiry_str) if suggested_expiry_str else date.today() + timedelta(days=30)
 
-            expiry = st.date_input(
-                "Expiry date", value=suggested_expiry, min_value=date.today(), key="barcode_expiry"
-            )
+            expiry = st.date_input("Expiry date", value=suggested_expiry, min_value=date.today(), key="barcode_expiry")
 
             current_category = product_info.get("category", "Other") or "Other"
             category_choice = st.selectbox(
                 "Category",
                 CATEGORY_OPTIONS,
-                index=(
-                    CATEGORY_OPTIONS.index(current_category)
-                    if current_category in CATEGORY_OPTIONS
-                    else CATEGORY_OPTIONS.index("Other")
-                ),
+                index=(CATEGORY_OPTIONS.index(current_category) if current_category in CATEGORY_OPTIONS else CATEGORY_OPTIONS.index("Other")),
                 key="barcode_category_override",
             )
 
-            submitted = st.form_submit_button(
-                "✓ Add to inventory", type="primary", use_container_width=True
-            )
+            submitted = st.form_submit_button("✓ Add to inventory", type="primary", use_container_width=True)
 
         if submitted:
             with st.spinner("Adding item..."):

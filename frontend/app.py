@@ -1,6 +1,16 @@
-import streamlit as st
 import os
+
+import streamlit as st
 from dotenv import load_dotenv
+from state.session import init_session_state
+from styles.theme import CUSTOM_STYLE
+from ui.dashboard import ensure_inventory_loaded, render_dashboard
+from ui.household_setup import render_household_setup
+from ui.public import render_public_view
+from ui.recipe import handle_generate_recipe
+from ui.stocktake import render_stocktake
+from ui.usage import render_usage_overview
+from utils.inventory import show_expiry_notifications
 
 # load environment variables from project root.
 # prefer a real .env file, but fall back to the example if that's all the user has
@@ -10,20 +20,11 @@ if not os.path.exists(env_path):
     env_path = os.path.join(root, ".env.example")
 load_dotenv(env_path)
 
-from styles.theme import CUSTOM_STYLE
-from state.session import init_session_state
-from ui.public import render_public_view
-from ui.dashboard import render_dashboard, ensure_inventory_loaded
-from ui.recipe import handle_generate_recipe
-from ui.stocktake import render_stocktake
-from ui.usage import render_usage_overview
-from utils.inventory import show_expiry_notifications
-from ui.household_setup import render_household_setup
-
 
 def main() -> None:
     if "page" not in st.session_state:
         st.session_state.page = "dashboard"
+    st.session_state.active_dialog = None
 
     st.set_page_config(page_title="Smart Pantry Dashboard", page_icon="🥕", layout="wide")
     st.markdown(CUSTOM_STYLE, unsafe_allow_html=True)

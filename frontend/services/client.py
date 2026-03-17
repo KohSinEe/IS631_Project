@@ -1,4 +1,5 @@
-from typing import Optional, Any
+from typing import Any, Optional
+
 import requests
 import streamlit as st
 from config.settings import API_BASE_URL

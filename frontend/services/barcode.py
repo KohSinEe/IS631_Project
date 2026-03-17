@@ -1,9 +1,9 @@
-from typing import Optional, Any, Dict, List
-import streamlit as st
-import numpy as np
-import cv2
 from datetime import date
+from typing import Any, Dict, List, Optional
 
+import cv2
+import numpy as np
+import streamlit as st
 from services.client import APIError, api_request
 
 

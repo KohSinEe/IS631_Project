@@ -1,6 +1,6 @@
 import streamlit as st
 from services.inventory import fetch_inventory
-from services.recipe import generate_recipe, cook_recipe
+from services.recipe import cook_recipe, generate_recipe
 
 
 def display_recipes(result):
