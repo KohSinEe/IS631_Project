@@ -143,6 +143,7 @@ resource "aws_instance" "demo" {
   instance_type               = var.instance_type
   subnet_id                   = local.subnet_id
   associate_public_ip_address = true
+  user_data_replace_on_change = true
   vpc_security_group_ids      = [aws_security_group.fridgebuddy.id]
   iam_instance_profile        = aws_iam_instance_profile.ec2_profile.name
   key_name                    = var.key_name != "" ? var.key_name : null
