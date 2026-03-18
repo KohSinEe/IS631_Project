@@ -27,10 +27,10 @@ retry() {
 }
 
 check_required_vars() {
-  [ -n "${aws_region:-}" ] || die "aws_region is empty"
-  [ -n "${repo_url:-}" ] || die "repo_url is empty"
-  [ -n "${repo_branch:-}" ] || die "repo_branch is empty"
-  [ -n "${secrets_manager_arn:-}" ] || die "secrets_manager_arn is empty"
+  [ -n "${aws_region}" ] || die "aws_region is empty"
+  [ -n "${repo_url}" ] || die "repo_url is empty"
+  [ -n "${repo_branch}" ] || die "repo_branch is empty"
+  [ -n "${secrets_manager_arn}" ] || die "secrets_manager_arn is empty"
 }
 
 wait_for_http() {
