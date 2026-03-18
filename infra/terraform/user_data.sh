@@ -36,8 +36,8 @@ check_required_vars() {
 wait_for_http() {
   local url="$1"
   local name="$2"
-  local attempts="${3:-30}"
-  local delay="${4:-5}"
+  local attempts="$${3:-30}"
+  local delay="$${4:-5}"
 
   for _ in $(seq 1 "$attempts"); do
     if curl -fsS "$url" >/dev/null 2>&1; then
