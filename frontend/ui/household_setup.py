@@ -80,7 +80,7 @@ def render_household_setup() -> None:
     try:
         invitations = fetch_my_invitations()
         pending = [x for x in (invitations or []) if isinstance(x, dict)]
-    except Exception:
+    except APIError:
         pending = []
 
     if pending and not st.session_state.household_setup_invitation_shown:

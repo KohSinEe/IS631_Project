@@ -123,7 +123,7 @@ def render_inventory_table(items: List[Dict[str, Any]], sort_by_expiry: bool) ->
         st.info("No items to display yet.")
         return working
 
-    st.markdown("### Inventory overview")
+    st.markdown("### Inventory Overview")
     st.dataframe(rows, width="stretch", hide_index=True)
     return working
 
@@ -143,7 +143,7 @@ def render_dashboard() -> None:
     try:
         raw = fetch_my_invitations()
         pending = [x for x in (raw or []) if isinstance(x, dict)]
-    except Exception:
+    except APIError:
         pending = []
     if not pending:
         st.session_state.invitation_popup_dismissed = False  # Reset so next invite shows popup
@@ -172,14 +172,14 @@ def render_dashboard() -> None:
                         st.success("You joined the fridge!")
                         mark_inventory_dirty(rerun=True)
                     except APIError as e:
-                        st.error(getattr(e, "message", str(e)))
+                        st.error(get_error_message(e))
             with col2:
                 if st.button("Decline", key=f"decline_inv_{inv_id}", type="secondary"):
                     try:
                         decline_invitation(inv_id)
                         st.rerun()
                     except APIError as e:
-                        st.error(getattr(e, "message", str(e)))
+                        st.error(get_error_message(e))
         st.divider()
 
     action_cols = st.columns([1, 1, 1])

@@ -74,5 +74,5 @@ def handle_generate_recipe():
             )
             display_recipes(recipe)
 
-        except Exception as e:
-            st.error(f"Failed to generate recipes: {e}")
+        except APIError as err:
+            st.error(f"Failed to generate recipes: {err}")

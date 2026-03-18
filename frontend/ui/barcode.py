@@ -21,8 +21,8 @@ def process_uploaded_image(uploaded_file) -> Optional[str]:
         if detected:
             return detected[0]  # Return first barcode found
         return None
-    except Exception as e:
-        st.error(f"Error processing image: {e}")
+    except (OSError, ValueError, TypeError, cv2.error) as err:
+        st.error(f"Error processing image: {err}")
         return None
 
 

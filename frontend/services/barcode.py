@@ -113,6 +113,12 @@ def detect_barcodes_in_image(image: np.ndarray) -> List[str]:
 
         # Deduplicate while preserving order
         return list(dict.fromkeys(detected))
-    except Exception as e:
-        st.warning(f"Error detecting barcode: {e}")
+    except cv2.error as err:
+        st.warning(f"Error detecting barcode: {err}")
+        return []
+    except ValueError as err:
+        st.warning(f"Error detecting barcode: {err}")
+        return []
+    except TypeError as err:
+        st.warning(f"Error detecting barcode: {err}")
         return []

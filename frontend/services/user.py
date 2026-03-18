@@ -40,15 +40,12 @@ def login_user(email: str, password: str) -> None:
 def logout_user() -> None:
     try:
         api_request("post", "/auth/logout")
-    except Exception:
-        # Always clear local state even if server request fails (e.g. network, 401)
-        pass
+    except APIError:
+        # Always clear local state even if server request fails (e.g. network, 401).
+        ...
 
-    try:
-        client = get_api_client()
-        client.cookies.clear()
-    except Exception:
-        pass
+    client = get_api_client()
+    client.cookies.clear()
     reset_session()
 
 
@@ -77,14 +74,10 @@ def reset_password(email: str, new_password: str) -> None:
     payload = {"email": email, "new_password": new_password}
     try:
         response = api_request("post", "/users/reset-password", json=payload)
-        print(f"Password reset response: {response}")
         if not response or (isinstance(response, dict) and response.get("message") != "Password reset successful"):
             st.error("Password reset failed. Please check your email and try again.")
         else:
             st.success("Password reset successful. Please sign in.")
-    except APIError as e:
-        st.error(f"Failed to reset password: {e}")
-        print(f"APIError: {e}")
     except APIError as e:
         st.error(f"Failed to reset password: {e}")
         raise

@@ -181,13 +181,13 @@ def profile_dialog() -> None:
                 try:
                     update_user(name)
                     st.rerun()
-                except Exception:
-                    st.error("Failed to update profile. Please try again")
+                except APIError as err:
+                    st.error(f"Failed to update profile. {err}")
 
     with tab_allergen:
         try:
             st.session_state.current_allergens = get_my_allergens()
-        except Exception:
+        except APIError:
             st.session_state.current_allergens = []
 
         st.subheader("My Allergens")
@@ -208,8 +208,8 @@ def profile_dialog() -> None:
                         add_allergens(to_add)
                         st.session_state.current_allergens += to_add
                         st.rerun()
-                    except Exception:
-                        st.error("Failed to add allergen. Please try again")
+                    except APIError as err:
+                        st.error(f"Failed to add allergen. {err}")
             else:
                 st.info("All allergens already added")
 
@@ -223,8 +223,8 @@ def profile_dialog() -> None:
                         st.session_state.current_allergens = [x for x in st.session_state.current_allergens if x not in to_remove]
                         st.session_state.active_dialog = "user_profile"
                         st.rerun()
-                    except Exception:
-                        st.error("Failed to remove allergen. Please try again")
+                    except APIError as err:
+                        st.error(f"Failed to remove allergen. {err}")
             else:
                 st.info("No allergens to remove")
 
@@ -251,8 +251,8 @@ def profile_dialog() -> None:
                             render_allergen_badges(allergens)
                     if not has_any:
                         st.info("No household members have allergens set.")
-            except Exception as e:
-                st.error(f"Failed to load household allergens: {str(e)}")
+            except APIError as err:
+                st.error(f"Failed to load household allergens: {err}")
         else:
             st.warning("You do not have the authority to see household allergens.")
 
@@ -265,8 +265,8 @@ def logout_dialog() -> None:
         if st.button("Yes", use_container_width=True):
             try:
                 logout_user()
-            except Exception:
-                pass  # Local state is cleared in logout_user; ensure we still close and rerun
+            except APIError:
+                ...
             st.rerun()
     with col2:
         if st.button("No", type="secondary", use_container_width=True):
@@ -354,7 +354,7 @@ def manage_fridge_dialog() -> None:
                         st.toast(f"Invitation sent to {email.strip()}")
                         st.rerun()
                     except APIError as e:
-                        st.error(getattr(e, "message", str(e)))
+                        st.error(get_error_message(e))
 
         if sent_invites:
             with st.expander("Pending Invitations", expanded=False):
@@ -387,7 +387,7 @@ def manage_fridge_dialog() -> None:
                     st.success("Fridge deleted.")
                     mark_inventory_dirty(rerun=True)
                 except APIError as e:
-                    st.error(getattr(e, "message", str(e)))
+                    st.error(get_error_message(e))
 
 
 @st.dialog("AddItem", on_dismiss=_reset_dialog)
