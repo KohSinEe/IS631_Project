@@ -1,6 +1,6 @@
 project_name        = "fridgebuddy-staging"
 aws_region          = "ap-southeast-1"
-instance_type       = "t3.large"
+instance_type       = "t2.micro"
 key_name            = "admin"
 admin_cidr          = "0.0.0.0/0"
 subnet_id           = ""
