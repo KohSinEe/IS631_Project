@@ -19,11 +19,19 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./food_management.db"
     
     # Security
+    AUTH_PROVIDER: str = "local"  # local | cognito
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     COOKIE_SECURE: bool = False
+
+    # AWS Cognito
+    AWS_REGION: str = ""
+    COGNITO_USER_POOL_ID: str = ""
+    COGNITO_APP_CLIENT_ID: str = ""
+    COGNITO_APP_CLIENT_SECRET: str = ""
+    COGNITO_AUTH_FLOW: str = "USER_PASSWORD_AUTH"
     
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = [
@@ -52,6 +60,26 @@ class Settings(BaseSettings):
             except json.JSONDecodeError:
                 return [origin.strip() for origin in self.BACKEND_CORS_ORIGINS.split(",")]
         return self.BACKEND_CORS_ORIGINS
+
+    @property
+    def cognito_issuer(self) -> str:
+        if not self.AWS_REGION or not self.COGNITO_USER_POOL_ID:
+            return ""
+        return (
+            f"https://cognito-idp.{self.AWS_REGION}.amazonaws.com/"
+            f"{self.COGNITO_USER_POOL_ID}"
+        )
+
+    @property
+    def cognito_jwks_url(self) -> str:
+        issuer = self.cognito_issuer
+        if not issuer:
+            return ""
+        return f"{issuer}/.well-known/jwks.json"
+
+    @property
+    def is_cognito_enabled(self) -> bool:
+        return self.AUTH_PROVIDER.strip().lower() == "cognito"
 
 
 settings = Settings()

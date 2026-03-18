@@ -1,8 +1,27 @@
 from datetime import date, timedelta
 from typing import Any, Dict, List
-
 import streamlit as st
 from config.settings import CATEGORY_OPTIONS, EXPIRY_ALERT_DAYS
+from config.settings import (
+    EXPIRY_ALERT_DAYS,
+    CATEGORY_OPTIONS,
+    UNIT_OPTIONS,
+    ALLERGEN_OPTIONS,
+    CATEGORY_DEFAULT_EXPIRY_DAYS,
+)
+from utils.inventory import (
+    parse_expiry,
+    summarize_inventory,
+    ensure_inventory_loaded,
+    filter_inventory,
+)
+from services.user import (
+    logout_user,
+    update_user,
+    delete_household,
+    get_current_user,
+    change_password,
+)
 from services.client import APIError
 from services.invitations import (
     accept_invitation,
@@ -10,6 +29,7 @@ from services.invitations import (
     fetch_household_invites,
     fetch_household_members,
     fetch_my_invitations,
+    create_invite,
 )
 from services.user import get_current_user
 from ui.dialogs import (
@@ -27,6 +47,257 @@ from utils.inventory import (
     parse_expiry,
     summarize_inventory,
 )
+
+from services.user import get_my_allergens, add_allergens, delete_allergens
+from services.client import api_request
+
+from ui.actions import handle_quick_actions
+from ui.barcode import handle_barcode_scan
+from ui.image_scan import handle_image_scan  # new photo recognition UI
+from ui.recipe import handle_generate_recipe
+
+
+@st.dialog("Profile")
+def profile_dialog() -> None:
+    user = st.session_state.user or {}
+
+    with st.form("update_profile_form"):
+        name = st.text_input(
+            "Username",
+            value=user.get("name") or "",
+            placeholder="Enter your display name",
+        )
+        _ = st.text_input(
+            "Email",
+            value=user.get("email") or "",
+            disabled=True,
+        )
+
+        save = st.form_submit_button("Save", use_container_width=True)
+
+    if save:
+        if not name.strip():
+            st.error("Name cannot be empty")
+        else:
+            try:
+                update_user(name)
+                st.success("Profile updated successfully")
+            except Exception as e:
+                st.error("Failed to update profile. Please try again")
+                st.error(e)
+
+    st.divider()
+    st.subheader("Change Password")
+    with st.form("change_password_form"):
+        current_password = st.text_input("Current Password", type="password")
+        new_password = st.text_input("New Password", type="password")
+        confirm_new_password = st.text_input("Confirm New Password", type="password")
+        change_pw = st.form_submit_button("Update Password", use_container_width=True)
+
+    if change_pw:
+        if not current_password or not new_password or not confirm_new_password:
+            st.error("All password fields are required")
+        elif new_password != confirm_new_password:
+            st.error("New passwords do not match")
+        elif current_password == new_password:
+            st.error("New password must be different from current password")
+        else:
+            try:
+                change_password(current_password, new_password)
+                st.success("Password updated successfully")
+            except APIError as err:
+                st.error(getattr(err, "message", str(err)))
+
+    st.divider()
+
+    # My Allergens section (always visible in profile)
+    try:
+        current_allergens = get_my_allergens()
+    except Exception:
+        current_allergens = []
+
+    with st.expander("**My Allergens**", expanded=True):
+        if current_allergens:
+            st.write("You are currently allergic to:")
+            st.write(", ".join(current_allergens))
+        else:
+            st.info("No allergens set.")
+
+        if "show_allergen_edit" not in st.session_state:
+            st.session_state.show_allergen_edit = False
+
+        if st.button(
+            "Edit My Allergens", key="profile_edit_allergens_btn", use_container_width=True
+        ):
+            st.session_state.show_allergen_edit = not st.session_state.show_allergen_edit
+
+        if st.session_state.show_allergen_edit:
+            available = [a for a in ALLERGEN_OPTIONS if a not in current_allergens]
+            removable = current_allergens
+
+            if available:
+                st.write("**Add allergens:**")
+                to_add = []
+                cols = st.columns(3)
+                for i, allergen in enumerate(available):
+                    with cols[i % 3]:
+                        if st.checkbox(allergen, key=f"add_{allergen}"):
+                            to_add.append(allergen)
+                if st.button("Add selected", key="add_allergens_btn"):
+                    if to_add:
+                        try:
+                            add_allergens(to_add)
+                            st.success(f"Added: {', '.join(to_add)}")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(str(e))
+                    else:
+                        st.warning("No allergens selected")
+
+            if removable:
+                st.write("**Remove allergens:**")
+                to_remove = []
+                cols = st.columns(3)
+                for i, allergen in enumerate(removable):
+                    with cols[i % 3]:
+                        if st.checkbox(allergen, key=f"remove_{allergen}"):
+                            to_remove.append(allergen)
+                if st.button("Remove selected", key="remove_allergens_btn"):
+                    if to_remove:
+                        try:
+                            delete_allergens(to_remove)
+                            st.success(f"Removed: {', '.join(to_remove)}")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(str(e))
+                    else:
+                        st.warning("No allergens selected")
+
+    st.divider()
+
+    # Household Allergens (owner/co-owner only)
+    user = st.session_state.user or {}
+    is_owner = user.get("is_household_owner", False)
+    is_co_owner = user.get("household_role") == "co_owner"
+
+    with st.expander("**Household Allergens**", expanded=True):
+        if not user.get("household_id"):
+            st.info("You are not part of a household.")
+        elif is_owner or is_co_owner:
+            try:
+                household_allergens = api_request("get", "/households/allergens")
+                members = fetch_household_members(user["household_id"])
+                member_map = {m.get("id"): m.get("name") or m.get("email") for m in members}
+
+                if isinstance(household_allergens, list):
+                    has_any = False
+                    for entry in household_allergens:
+                        allergens = entry.get("allergens", [])
+                        if allergens:
+                            has_any = True
+                            name = member_map.get(
+                                entry.get("user_id"), f"User {entry.get('user_id')}"
+                            )
+                            st.write(f"**{name.title()}**: {', '.join(allergens)}")
+                    if not has_any:
+                        st.info("No household members have allergens set.")
+            except Exception as e:
+                st.error(f"Failed to load household allergens: {str(e)}")
+        else:
+            st.warning("You do not have the authority to see household allergens.")
+
+
+@st.dialog("Logout")
+def logout_dialog() -> None:
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        if st.button("Yes", use_container_width=True):
+            try:
+                logout_user()
+            except Exception:
+                pass  # Local state is cleared in logout_user; ensure we still close and rerun
+            st.session_state.show_logout_dialog = False
+            st.rerun()
+    with col2:
+        if st.button("No", type="secondary", use_container_width=True):
+            st.session_state.show_logout_dialog = False
+            st.rerun()
+
+
+@st.dialog("Invite to fridge")
+def invite_user_dialog(household_id: int) -> None:
+    # Show success + OK when we just sent an invite (so user can acknowledge)
+    if st.session_state.get("invite_sent_to"):
+        email = st.session_state.invite_sent_to
+        st.success(
+            f"Invitation sent to **{email}**. They can accept or decline from their dashboard."
+        )
+        if st.button("OK", type="primary", use_container_width=True):
+            st.session_state.invite_sent_to = None
+            st.session_state.show_invite_dialog = False
+            st.rerun()
+        return
+
+    st.caption("Invite someone by email. They must already have an account.")
+    with st.form("invite_user_form"):
+        email = st.text_input("Email", placeholder="friend@example.com", key="invite_email")
+        role = st.selectbox(
+            "Role",
+            options=["co_owner", "child"],
+            format_func=lambda x: "Co-owner" if x == "co_owner" else "Child",
+            key="invite_role",
+        )
+        submitted = st.form_submit_button("Send invite")
+    if submitted:
+        if not email or "@" not in email:
+            st.error("Please enter a valid email.")
+        else:
+            try:
+                create_invite(household_id, email.strip(), role)
+                st.session_state.invite_sent_to = email.strip()
+                st.rerun()
+            except APIError as e:
+                st.error(getattr(e, "message", str(e)))
+
+
+@st.dialog("You have a fridge invitation")
+def invitation_notification_dialog(invites: list) -> None:
+    """Pop-up to notify the user they have pending invitation(s)."""
+    invites = [i for i in (invites or []) if isinstance(i, dict)]
+    if not invites:
+        return
+    inv = invites[0]
+    role_label = "Co-owner" if inv.get("role") == "co_owner" else "Child"
+    fridge_name = inv.get("household_name") or "a fridge"
+    st.info(f"You've been invited to join **{fridge_name}** as **{role_label}**.")
+    if len(invites) > 1:
+        st.caption(f"You have {len(invites)} pending invitation(s).")
+    if st.button("OK", type="primary", use_container_width=True):
+        st.session_state.invitation_popup_dismissed = True
+        st.rerun()
+
+
+@st.dialog("Delete fridge")
+def delete_fridge_dialog(household_id: int) -> None:
+    st.warning(
+        "This will permanently delete your fridge and all its contents. "
+        "All members will be removed from the fridge. This cannot be undone."
+    )
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Cancel", type="secondary", use_container_width=True):
+            st.session_state.show_delete_fridge_dialog = False
+            st.rerun()
+    with col2:
+        if st.button("Delete my fridge", type="primary", use_container_width=True):
+            try:
+                delete_household(household_id)
+                st.session_state.show_delete_fridge_dialog = False
+                st.success("Fridge deleted.")
+                st.rerun()
+            except APIError as e:
+                st.error(getattr(e, "message", str(e)))
 
 
 def render_header() -> None:
@@ -52,21 +323,47 @@ def render_header() -> None:
         st.markdown("<div style='margin-top: 1.5rem'></div>", unsafe_allow_html=True)
 
         with st.popover("Account"):
-            if st.button("Profile", key="header_profile_btn", use_container_width=True) or st.session_state.active_dialog == "user_profile":
+            if (
+                st.button("Profile", key="header_profile_btn", use_container_width=True)
+                or st.session_state.active_dialog == "user_profile"
+            ):
                 st.session_state.active_dialog = "user_profile"
                 profile_dialog()
-            if household_id and is_owner and (st.button("Invite to fridge", key="header_invite_btn", use_container_width=True) or st.session_state.active_dialog == "invite_user"):
+            if (
+                household_id
+                and is_owner
+                and (
+                    st.button("Invite to fridge", key="header_invite_btn", use_container_width=True)
+                    or st.session_state.active_dialog == "invite_user"
+                )
+            ):
                 st.session_state.active_dialog = "invite_user"
                 invite_user_dialog()
-            if household_id and is_owner and (st.button("Delete fridge", key="header_delete_fridge_btn", use_container_width=True) or st.session_state.active_dialog == "delete_fridge"):
+            if (
+                household_id
+                and is_owner
+                and (
+                    st.button(
+                        "Delete fridge", key="header_delete_fridge_btn", use_container_width=True
+                    )
+                    or st.session_state.active_dialog == "delete_fridge"
+                )
+            ):
                 st.session_state.active_dialog = "delete_fridge"
                 delete_fridge_dialog()
-            if st.button("Sign out", key="header_signout_btn", type="secondary", use_container_width=True) or st.session_state.active_dialog == "logout":
+            if (
+                st.button(
+                    "Sign out", key="header_signout_btn", type="secondary", use_container_width=True
+                )
+                or st.session_state.active_dialog == "logout"
+            ):
                 st.session_state.active_dialog = "logout"
                 logout_dialog()
 
 
-def render_metric(label: str, value: Any, column: st.delta_generator.DeltaGenerator, color: str) -> None:
+def render_metric(
+    label: str, value: Any, column: st.delta_generator.DeltaGenerator, color: str
+) -> None:
     color_class = {
         "blue": "",
         "green": "metric-green",
@@ -97,10 +394,16 @@ def render_expiry_alerts(summary: Dict[str, Any]) -> None:
         st.write(f"• {item['name']} — {item['quantity']} {item['unit']} by {expiry}")
 
 
-def render_inventory_table(items: List[Dict[str, Any]], sort_by_expiry: bool) -> List[Dict[str, Any]]:
+def render_inventory_table(
+    items: List[Dict[str, Any]], sort_by_expiry: bool
+) -> List[Dict[str, Any]]:
     working = items.copy()
     if sort_by_expiry:
-        working.sort(key=lambda entry: (parse_expiry(entry["expiry_date"]) if entry.get("expiry_date") else date.max))
+        working.sort(
+            key=lambda entry: (
+                parse_expiry(entry["expiry_date"]) if entry.get("expiry_date") else date.max
+            )
+        )
 
     rows: List[Dict[str, Any]] = []
     soon_cutoff = date.today() + timedelta(days=EXPIRY_ALERT_DAYS)
@@ -178,11 +481,15 @@ def render_dashboard() -> None:
             inv_id = inv.get("id")
             if inv_id is None:
                 continue
-            st.write(f"**{inv.get('household_name', 'Fridge')}** — {inviter} invited you as **{role_label}**.")
+            st.write(
+                f"**{inv.get('household_name', 'Fridge')}** — {inviter} invited you as **{role_label}**."
+            )
             col1, col2, _ = st.columns([1, 1, 4])
             with col1:
                 if st.button("Accept", key=f"accept_inv_{inv_id}"):
-                    st.session_state.active_dialog = None  # Avoid opening "Invite to fridge" after accept
+                    st.session_state.active_dialog = (
+                        None  # Avoid opening "Invite to fridge" after accept
+                    )
                     try:
                         accept_invitation(inv_id)
                         get_current_user()
@@ -209,7 +516,9 @@ def render_dashboard() -> None:
     household_id = st.session_state.household_id
     if not household_id:
         if not pending:
-            st.info("You do not belong to a fridge yet. Get invited by an owner, or create an account with a household name.")
+            st.info(
+                "You do not belong to a fridge yet. Get invited by an owner, or create an account with a household name."
+            )
         ensure_inventory_loaded()
         return
 
@@ -254,15 +563,22 @@ def render_dashboard() -> None:
     _ = st.selectbox("Filter by category", filter_options, key="category_filter")
     _ = st.toggle("Sort by expiry date", key="sort_by_expiry")
 
-    st.session_state.filtered_inventory = filter_inventory(st.session_state.inventory, st.session_state.category_filter)
-    st.session_state.filtered_inventory = render_inventory_table(st.session_state.filtered_inventory, st.session_state.sort_by_expiry)
+    st.session_state.filtered_inventory = filter_inventory(
+        st.session_state.inventory, st.session_state.category_filter
+    )
+    st.session_state.filtered_inventory = render_inventory_table(
+        st.session_state.filtered_inventory, st.session_state.sort_by_expiry
+    )
 
     with add_item_col:
         if st.button("Add Item", use_container_width=True):
             st.session_state.active_dialog = "add_item"
             add_item_dialog()
     with edit_item_col:
-        if st.button("Edit Items", use_container_width=True) or st.session_state.active_dialog == "edit_item":
+        if (
+            st.button("Edit Items", use_container_width=True)
+            or st.session_state.active_dialog == "edit_item"
+        ):
             st.session_state.active_dialog = "edit_item"
             edit_item_dialog(st.session_state.filtered_inventory)
 

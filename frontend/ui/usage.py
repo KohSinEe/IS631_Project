@@ -68,7 +68,9 @@ def render_usage_overview() -> None:
     st.divider()
 
     if not logs:
-        st.info("No consumption recorded in this period. Quantity decreases via 'Quick Actions' are tracked here.")
+        st.info(
+            "No consumption recorded in this period. Quantity decreases via 'Quick Actions' are tracked here."
+        )
         return
 
     # Consumption table
