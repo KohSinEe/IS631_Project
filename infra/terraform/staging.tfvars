@@ -1,7 +1,7 @@
 project_name        = "fridgebuddy-staging"
 aws_region          = "ap-southeast-1"
 instance_type       = "t3.micro"
-key_name            = "test-key"
+key_name            = "admin"
 admin_cidr          = "103.252.200.33/32"
 subnet_id           = ""
 repo_url            = "https://github.com/KohSinEe/IS631_Project.git"
