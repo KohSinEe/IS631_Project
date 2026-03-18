@@ -7,7 +7,9 @@ import requests
 import streamlit as st
 from config.settings import CATEGORY_OPTIONS, UNIT_OPTIONS
 from PIL import Image
+from services.client import APIError
 from services.inventory import create_inventory_item
+from state.session import mark_inventory_dirty
 
 # environment variables should already be loaded by frontend/app.py; just read
 VISION_API_KEY = os.getenv("VISION_API_KEY")
@@ -103,7 +105,9 @@ def handle_image_scan() -> None:
                 "expiry_date": expiry.isoformat(),
                 "category": category,
             }
-            create_inventory_item(item)
-            st.success(f"{selected_food} added to inventory")
-            st.session_state.inventory_dirty = True
-            st.rerun()
+            try:
+                create_inventory_item(item)
+                st.success(f"{selected_food} added to inventory")
+                mark_inventory_dirty(rerun=True)
+            except APIError as err:
+                st.error(err.message)

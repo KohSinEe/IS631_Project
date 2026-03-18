@@ -10,6 +10,7 @@ from services.invitations import (
     fetch_my_invitations,
 )
 from services.user import get_current_user
+from state.session import mark_inventory_dirty, reset_active_dialog
 from ui.dialogs import (
     add_item_dialog,
     edit_item_dialog,
@@ -24,6 +25,7 @@ from utils.inventory import (
     parse_expiry,
     summarize_inventory,
 )
+from utils.presentation import format_role, get_error_message, safe_html_text, user_display_name
 
 
 def render_header() -> None:
@@ -33,7 +35,7 @@ def render_header() -> None:
     header_left, header_right = st.columns([8, 2])
 
     with header_left:
-        name = user.get("name") or user.get("email") or "there"
+        name = safe_html_text(user_display_name(user))
         st.markdown(
             f"""
             <div class="dashboard-welcome">
@@ -154,7 +156,7 @@ def render_dashboard() -> None:
     if pending:
         st.markdown("### Pending invitations")
         for inv in pending:
-            role_label = "Co-owner" if inv.get("role") == "co_owner" else "Child"
+            role_label = format_role(inv.get("role"))
             inviter = inv.get("inviter_name") or "Someone"
             inv_id = inv.get("id")
             if inv_id is None:
@@ -163,13 +165,12 @@ def render_dashboard() -> None:
             col1, col2, _ = st.columns([1, 1, 4])
             with col1:
                 if st.button("Accept", key=f"accept_inv_{inv_id}"):
-                    st.session_state.active_dialog = None  # Avoid opening "Invite to fridge" after accept
+                    reset_active_dialog()  # Avoid opening "Invite to fridge" after accept
                     try:
                         accept_invitation(inv_id)
                         get_current_user()
-                        st.session_state.inventory_dirty = True
                         st.success("You joined the fridge!")
-                        st.rerun()
+                        mark_inventory_dirty(rerun=True)
                     except APIError as e:
                         st.error(getattr(e, "message", str(e)))
             with col2:
@@ -192,12 +193,12 @@ def render_dashboard() -> None:
     nav_col1, nav_col2 = st.columns(2)
     with nav_col1:
         if st.button("Stocktake", use_container_width=True):
-            st.session_state.active_dialog = None
+            reset_active_dialog()
             st.session_state.page = "stocktake"
             st.rerun()
     with nav_col2:
         if st.button("Usage Overview", use_container_width=True):
-            st.session_state.active_dialog = None
+            reset_active_dialog()
             st.session_state.page = "usage"
             st.rerun()
 

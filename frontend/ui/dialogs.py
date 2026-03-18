@@ -16,12 +16,21 @@ from services.user import (
     register_user,
     update_user,
 )
+from state.session import mark_inventory_dirty, reset_active_dialog
 from ui.actions import handle_add_item, handle_quick_actions
 from ui.barcode import handle_barcode_scan
+from utils.presentation import (
+    format_invitation_status,
+    format_role,
+    get_error_message,
+    render_allergen_badges,
+    safe_html_text,
+    user_display_name,
+)
 
 
 def _reset_dialog():
-    st.session_state.active_dialog = None
+    reset_active_dialog()
 
 
 @st.dialog("Sign In", on_dismiss=_reset_dialog)
@@ -92,29 +101,23 @@ def reset_password_dialog() -> None:
                 st.error(err.message)
 
 
-@st.dialog("You have a fridge invitation!", on_dismiss=_reset_dialog)
-def invitation_dialog(invites: list) -> None:
+def _render_invitation_card(invites: list, dismiss_key: str) -> bool:
+    invites = [i for i in (invites or []) if isinstance(i, dict)]
+    if not invites:
+        return False
     inv = invites[0]
-    role_label = "Co-owner" if inv.get("role") == "co_owner" else "Child"
+    role_label = format_role(inv.get("role"))
     fridge_name = inv.get("household_name") or "a fridge"
     st.info(f"You've been invited to join **{fridge_name}** as **{role_label}**.")
     if len(invites) > 1:
         st.caption(f"You have {len(invites)} pending invitation(s) total.")
-    if st.button("OK", type="primary", use_container_width=True):
+    return st.button("OK", type="primary", use_container_width=True, key=dismiss_key)
+
+
+@st.dialog("You have a fridge invitation!", on_dismiss=_reset_dialog)
+def invitation_dialog(invites: list) -> None:
+    if _render_invitation_card(invites, dismiss_key="invitation_dialog_ok"):
         st.rerun()
-
-
-def _render_allergen_pills(allergens: list) -> None:
-    """Render allergens as badges."""
-    if not allergens:
-        st.caption("None set")
-        return
-
-    # Create two rows of badges
-    cols = st.columns(len(allergens) if len(allergens) <= 3 else 3, gap="small")
-    for i, allergen in enumerate(allergens):
-        with cols[i % len(cols)]:
-            st.metric("", allergen, label_visibility="collapsed")
 
 
 @st.dialog("Profile", on_dismiss=_reset_dialog)
@@ -126,7 +129,7 @@ def profile_dialog() -> None:
     # Profile Header
     header_col1, header_col2 = st.columns([1, 3], gap="medium")
     with header_col1:
-        user_name = user.get("name") or user.get("email", "U")
+        user_name = user_display_name(user, fallback="U")
         initials = "".join([word[0].upper() for word in user_name.split()][:2])
         st.markdown(
             f"""
@@ -148,7 +151,7 @@ def profile_dialog() -> None:
         )
 
     with header_col2:
-        st.markdown(f"## {user_name}")
+        st.markdown(f"## {safe_html_text(user_name)}")
         st.caption(f"📧 {user.get('email', 'N/A')}")
 
     st.divider()
@@ -189,11 +192,7 @@ def profile_dialog() -> None:
 
         st.subheader("My Allergens")
         if st.session_state.current_allergens:
-            badges = " ".join(
-                f'<span style="' f"background:#FF4B4B22; color:#FF4B4B; border:1px solid #FF48B4B55;" f"padding:2px 10px; border-radius:999px; font-size:0.85rem;" f'">{a}</span>'
-                for a in st.session_state.current_allergens
-            )
-            st.markdown(badges, unsafe_allow_html=True)
+            render_allergen_badges(st.session_state.current_allergens)
         else:
             st.info("You have no allergens set.")
 
@@ -249,11 +248,7 @@ def profile_dialog() -> None:
                             has_any = True
                             member_name = member_map.get(entry.get("user_id"), f"User {entry.get('user_id')}")
                             st.write(f"**{member_name.title()}**")
-                            badges = " ".join(
-                                f'<span style="' f"background:#FF4B4B22; color:#FF4B4B; border:1px solid #FF48B4B55;" f"padding:2px 10px; border-radius:999px; font-size:0.85rem;" f'">{a}</span>'
-                                for a in allergens
-                            )
-                            st.markdown(badges, unsafe_allow_html=True)
+                            render_allergen_badges(allergens)
                     if not has_any:
                         st.info("No household members have allergens set.")
             except Exception as e:
@@ -280,16 +275,7 @@ def logout_dialog() -> None:
 
 @st.dialog("You have a fridge invitation", on_dismiss=_reset_dialog)
 def invitation_notification_dialog(invites: list) -> None:
-    invites = [i for i in (invites or []) if isinstance(i, dict)]
-    if not invites:
-        return
-    inv = invites[0]
-    role_label = "Co-owner" if inv.get("role") == "co_owner" else "Child"
-    fridge_name = inv.get("household_name") or "a fridge"
-    st.info(f"You've been invited to join **{fridge_name}** as **{role_label}**.")
-    if len(invites) > 1:
-        st.caption(f"You have {len(invites)} pending invitation(s).")
-    if st.button("OK", type="primary", use_container_width=True):
+    if _render_invitation_card(invites, dismiss_key="invitation_notification_ok"):
         st.session_state.invitation_popup_dismissed = True
         st.rerun()
 
@@ -313,7 +299,6 @@ def manage_fridge_dialog() -> None:
     st.markdown("**Fridge Members**")
 
     if members:
-        role_label = {"owner": "Owner", "co_owner": "Co-owner", "child": "Child"}
         role_order = {"owner": 0, "co_owner": 1, "child": 2}
         current_email = user.get("email", "").lower()
 
@@ -329,7 +314,7 @@ def manage_fridge_dialog() -> None:
             else:
                 display_name = member_name
 
-            role = role_label.get(m.get("role"), m.get("role", ""))
+            role = format_role(m.get("role"))
             col1, col2 = st.columns([3, 1])
             with col1:
                 st.caption(f"**{display_name}**")
@@ -354,7 +339,7 @@ def manage_fridge_dialog() -> None:
                 role = st.selectbox(
                     "Role",
                     options=["co_owner", "child"],
-                    format_func=lambda x: "Co-owner" if x == "co_owner" else "Child",
+                    format_func=format_role,
                     key="manage_invite_role",
                     help="Co-owners can manage the fridge. Children have read-only access.",
                 )
@@ -373,13 +358,10 @@ def manage_fridge_dialog() -> None:
 
         if sent_invites:
             with st.expander("Pending Invitations", expanded=False):
-                status_label = {"pending": "Pending", "accepted": "Accepted", "declined": "Declined"}
-                role_label_inv = {"co_owner": "Co-owner", "child": "Child"}
-
                 for inv in sent_invites:
                     email = inv.get("invitee_email", "")
-                    role = role_label_inv.get(inv.get("role"), inv.get("role", ""))
-                    status = status_label.get(inv.get("status"), inv.get("status", ""))
+                    role = format_role(inv.get("role"))
+                    status = format_invitation_status(inv.get("status"))
 
                     col1, col2, col3 = st.columns([2, 1, 1])
                     with col1:
@@ -403,7 +385,7 @@ def manage_fridge_dialog() -> None:
                 try:
                     delete_household(household_id)
                     st.success("Fridge deleted.")
-                    st.rerun()
+                    mark_inventory_dirty(rerun=True)
                 except APIError as e:
                     st.error(getattr(e, "message", str(e)))
 

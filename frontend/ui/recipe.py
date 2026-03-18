@@ -1,6 +1,8 @@
 import streamlit as st
+from services.client import APIError
 from services.inventory import fetch_inventory
 from services.recipe import cook_recipe, generate_recipe
+from state.session import mark_inventory_dirty
 
 
 def display_recipes(result):
@@ -30,10 +32,6 @@ def display_recipes(result):
             if "reason" in recipe:
                 st.markdown(f"**Reason for this recipe:** {recipe['reason']}")
 
-            cook_key = f"cook_in_progress_{idx}_{recipe['title']}"
-            if cook_key not in st.session_state:
-                st.session_state[cook_key] = False
-
             if missing:
                 st.warning("This recipe cannot be cooked yet because some ingredients are missing.")
             else:
@@ -42,12 +40,11 @@ def display_recipes(result):
                     try:
                         cook_recipe(recipe)
                         st.session_state.flash_success = "Ingredients deducted from fridge."
-                        st.session_state.inventory_dirty = True
                         st.session_state.category_filter = "All"
                         st.session_state.page = "dashboard"
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Failed to deduct ingredients: {e}")
+                        mark_inventory_dirty(rerun=True)
+                    except APIError as err:
+                        st.error(f"Failed to deduct ingredients: {err}")
 
 
 def handle_generate_recipe():

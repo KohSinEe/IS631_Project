@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional
 
 import streamlit as st
 from services.client import APIError, api_request, get_api_client
+from state.adapter import get_user, set_household_id, set_inventory_dirty, set_user
 from state.session import reset_session
 
 
@@ -31,9 +32,9 @@ def login_user(email: str, password: str) -> None:
         raise APIError("Unexpected profile payload")
 
     st.session_state.is_authenticated = True
-    st.session_state.user = profile
-    st.session_state.household_id = profile.get("household_id")
-    st.session_state.inventory_dirty = True
+    set_user(profile)
+    set_household_id(profile.get("household_id"))
+    set_inventory_dirty(True)
 
 
 def logout_user() -> None:
@@ -54,11 +55,11 @@ def logout_user() -> None:
 def get_current_user() -> None:
     profile = api_request("get", "/users/me")
 
-    if profile:
+    if isinstance(profile, dict):
         st.session_state.is_authenticated = True
-        st.session_state.user = profile
-        st.session_state.household_id = profile.get("household_id")
-        st.session_state.inventory_dirty = True
+        set_user(profile)
+        set_household_id(profile.get("household_id"))
+        set_inventory_dirty(True)
 
 
 def update_user(name: str) -> None:
@@ -92,21 +93,25 @@ def reset_password(email: str, new_password: str) -> None:
 def delete_household(household_id: int) -> None:
     """Delete the current user's fridge (household) and all its contents. Owner only."""
     api_request("delete", f"/households/{household_id}")
-    st.session_state.household_id = None
+    set_household_id(None)
     st.session_state.inventory = []
-    st.session_state.inventory_dirty = True
-    if st.session_state.user and isinstance(st.session_state.user, dict):
-        st.session_state.user["household_id"] = None
-        st.session_state.user["is_household_owner"] = False
+    set_inventory_dirty(True)
+    user = get_user()
+    if user:
+        user["household_id"] = None
+        user["is_household_owner"] = False
+        set_user(user)
 
 
 def create_household(name: str) -> Dict[str, Any]:
     result = api_request("post", "/households", json={"name": name})
     if isinstance(result, dict):
-        st.session_state.household_id = result.get("id")
-        if st.session_state.user:
-            st.session_state.user["household_id"] = result.get("id")
-            st.session_state.user["is_household_owner"] = True
+        set_household_id(result.get("id"))
+        user = get_user()
+        if user:
+            user["household_id"] = result.get("id")
+            user["is_household_owner"] = True
+            set_user(user)
     return result
 
 

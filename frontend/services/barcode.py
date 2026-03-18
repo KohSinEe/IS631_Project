@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import streamlit as st
 from services.client import APIError, api_request
+from state.adapter import get_household_id
 
 
 def _normalize_decoded_values(values: Any) -> List[str]:
@@ -74,7 +75,7 @@ def add_item_from_barcode(
 ) -> Optional[Dict[str, Any]]:
     """Add item to inventory from barcode scan."""
     params = {
-        "household_id": st.session_state.household_id,
+        "household_id": get_household_id(),
         "barcode": barcode,
         "quantity": quantity,
     }

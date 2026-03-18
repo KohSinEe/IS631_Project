@@ -3,6 +3,7 @@ from services.client import APIError
 from services.invitations import accept_invitation, decline_invitation, fetch_my_invitations
 from services.user import create_household
 from ui.dialogs import invitation_dialog, logout_dialog
+from utils.presentation import format_role
 
 
 def _render_create_household() -> None:
@@ -37,7 +38,7 @@ def _render_pending_invitations(invitations: list) -> None:
     for inv in invitations:
         household_name = inv.get("household_name") or f"Household #{inv.get('household_id')}"
         inviter = inv.get("inviter_name") or inv.get("inviter_email") or "Someone"
-        role = inv.get("role", "member").replace("_", " ").title()
+        role = format_role(inv.get("role"))
         inv_id = inv.get("id")
 
         with st.container(border=True):

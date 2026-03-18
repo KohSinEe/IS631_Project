@@ -41,3 +41,18 @@ def reset_session() -> None:
     """Reset authentication-related state."""
     for key, value in SESSION_DEFAULTS.items():
         st.session_state[key] = value
+
+
+def reset_active_dialog() -> None:
+    st.session_state.active_dialog = None
+
+
+def reset_dashboard_filters() -> None:
+    st.session_state.category_filter = "All"
+    st.session_state.sort_by_expiry = True
+
+
+def mark_inventory_dirty(rerun: bool = False) -> None:
+    st.session_state.inventory_dirty = True
+    if rerun:
+        st.rerun()

@@ -2,7 +2,7 @@ import os
 
 import streamlit as st
 from dotenv import load_dotenv
-from state.session import init_session_state
+from state.session import init_session_state, reset_dashboard_filters
 from styles.theme import CUSTOM_STYLE
 from ui.dashboard import ensure_inventory_loaded, render_dashboard
 from ui.household_setup import render_household_setup
@@ -39,7 +39,7 @@ def main() -> None:
             show_expiry_notifications(st.session_state.inventory)
 
             if st.session_state.page == "dashboard":
-                st.session_state.category_filter = "All"
+                reset_dashboard_filters()
                 render_dashboard()
             elif st.session_state.page == "recipe":
                 handle_generate_recipe()

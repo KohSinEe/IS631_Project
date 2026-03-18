@@ -1,15 +1,14 @@
 from datetime import date
 from typing import Any, Dict, Optional
-
-import streamlit as st
 from services.client import api_request
+from state.adapter import get_household_id
 
 
 def fetch_usage_summary(
     from_date: Optional[date] = None,
     to_date: Optional[date] = None,
 ) -> Dict[str, Any]:
-    household_id = st.session_state.household_id
+    household_id = get_household_id()
     if not household_id:
         return {
             "logs": [],
