@@ -2,6 +2,7 @@ import os
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api/v1")
 EXPIRY_ALERT_DAYS = int(os.getenv("EXPIRY_ALERT_DAYS", "5"))
+USAGE_DEFAULT_DAYS = int(os.getenv("USAGE_DEFAULT_DAYS", "30"))
 
 CATEGORY_OPTIONS = [
     "Dairy",
@@ -45,3 +46,15 @@ ALLERGEN_OPTIONS = [
     "SOY",
     "SESAME",
 ]
+
+ROLE_DISPLAY_NAMES = {
+    "owner": "Owner",
+    "co_owner": "Co-owner",
+    "child": "Child",
+}
+
+INVITATION_STATUS_DISPLAY = {
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "declined": "Declined",
+}
