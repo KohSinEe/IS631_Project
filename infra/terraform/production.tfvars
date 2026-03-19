@@ -1,6 +1,6 @@
 project_name          = "fridgebuddy-prod"
 aws_region            = "ap-southeast-1"
-instance_type         = "M7i-flex.large"
+instance_type         = "m7i-flex.large"
 key_name              = "admin"
 admin_cidr            = "0.0.0.0/0"
 subnet_id             = ""
