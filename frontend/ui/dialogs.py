@@ -5,8 +5,10 @@ from services.invitations import (
     create_invite,
     fetch_household_invites,
     fetch_household_members,
+    remove_household_member,
 )
 from services.user import (
+    get_current_user,
     add_allergens,
     delete_allergens,
     delete_household,
@@ -305,6 +307,7 @@ def manage_fridge_dialog() -> None:
         sorted_members = sorted(members, key=lambda m: (role_order.get(m.get("role"), 999), (m.get("name") or m.get("email") or "—").lower()))
 
         for m in sorted_members:
+            member_id = m.get("id")
             member_name = m.get("name") or m.get("email") or "—"
             member_email = m.get("email", "").lower()
             is_current_user = member_email == current_email
@@ -315,11 +318,23 @@ def manage_fridge_dialog() -> None:
                 display_name = member_name
 
             role = format_role(m.get("role"))
-            col1, col2 = st.columns([3, 1])
+            can_remove = is_owner and m.get("role") != "owner" and isinstance(member_id, int)
+            col1, col2, col3 = st.columns([2.5, 1, 1.2])
             with col1:
                 st.caption(f"**{display_name}**")
             with col2:
                 st.caption(f"_{role}_")
+            with col3:
+                if can_remove:
+                    if st.button("remove", key=f"remove_member_{member_id}", use_container_width=True, type="secondary"):
+                        try:
+                            remove_household_member(household_id, member_id)
+                            st.toast("Member removed")
+                            get_current_user()
+                            mark_inventory_dirty(rerun=True)
+                            st.rerun()
+                        except APIError as e:
+                            st.error(get_error_message(e))
     else:
         st.caption("No members yet.")
 

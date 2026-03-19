@@ -28,6 +28,11 @@ def fetch_my_invitations() -> List[dict]:
     return [x for x in out if isinstance(x, dict)]
 
 
+def remove_household_member(household_id: int, member_id: int) -> None:
+    """Remove a member from the fridge (owner only)."""
+    api_request("delete", f"/households/{household_id}/members/{member_id}")
+
+
 def create_invite(household_id: int, email: str, role: str) -> dict:
     """Invite a user by email with a role (co_owner | child). Owner only."""
     return api_request(
