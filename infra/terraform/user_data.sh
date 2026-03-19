@@ -56,13 +56,29 @@ log "Starting FridgeBuddy EC2 bootstrap"
 check_required_vars
 
 retry 5 apt-get update -y
-retry 5 apt-get install -y docker.io docker-compose-plugin git jq awscli curl
+retry 5 apt-get install -y ca-certificates curl gnupg git jq unzip
+
+# Install Docker from official repo (docker.io unavailable on Ubuntu 24.04)
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+chmod a+r /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+  > /etc/apt/sources.list.d/docker.list
+retry 5 apt-get update -y
+retry 5 apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
 systemctl enable docker
 systemctl start docker
 systemctl is-active --quiet docker || die "Docker service is not active"
 
 usermod -aG docker ubuntu || true
+
+# Install AWS CLI v2 (awscli package unavailable on Ubuntu 24.04)
+curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+unzip -q /tmp/awscliv2.zip -d /tmp
+/tmp/aws/install
+rm -rf /tmp/aws /tmp/awscliv2.zip
 
 mkdir -p /opt/fridgebuddy
 if [ ! -d /opt/fridgebuddy/.git ]; then
