@@ -56,7 +56,8 @@ jobs:
         run: |
           terraform plan \
             -out=tfplan \
-            -var-file=staging.tfvars
+            -var-file=staging.tfvars \
+            -var="deploy_id=${{ github.event.pull_request.merge_commit_sha }}"
 
       - name: Terraform Apply (staging)
         working-directory: infra/terraform
@@ -103,7 +104,8 @@ jobs:
         run: |
           terraform plan \
             -out=tfplan \
-            -var-file=production.tfvars
+            -var-file=production.tfvars \
+            -var="deploy_id=${{ github.event.pull_request.merge_commit_sha }}"
 
       - name: Upload Terraform plan artifact
         uses: actions/upload-artifact@v4

@@ -158,6 +158,7 @@ resource "aws_instance" "demo" {
     repo_url            = var.repo_url
     repo_branch         = var.repo_branch
     secrets_manager_arn = var.secrets_manager_arn
+    deploy_id           = var.deploy_id
   })
 
   root_block_device {

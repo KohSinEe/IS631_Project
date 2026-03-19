@@ -49,3 +49,9 @@ variable "secrets_manager_arn" {
   description = "Secrets Manager ARN containing app env vars (JSON or dotenv string)"
   type        = string
 }
+
+variable "deploy_id" {
+  description = "Unique ID per deploy (e.g. git commit SHA) — forces instance replacement on every deploy"
+  type        = string
+  default     = "manual"
+}
