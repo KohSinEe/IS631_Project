@@ -104,8 +104,6 @@ def reset_password(email: str, new_password: str) -> None:
     except APIError as e:
         st.error(f"Failed to reset password: {e}")
         print(f"APIError: {e}")
-    except APIError as e:
-        st.error(f"Failed to reset password: {e}")
         raise
 
 

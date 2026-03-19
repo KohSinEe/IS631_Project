@@ -1,5 +1,5 @@
 import streamlit as st
-from ui.dialogs import reset_password_dialog, sign_in_dialog, sign_up_dialog
+from ui.dialogs import reset_password_dialog
 from services.user import login_user, register_user
 from services.client import APIError
 
