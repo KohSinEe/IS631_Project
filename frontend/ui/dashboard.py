@@ -338,7 +338,7 @@ def render_header() -> None:
                 )
             ):
                 st.session_state.active_dialog = "invite_user"
-                invite_user_dialog()
+                invite_user_dialog(household_id)
             if (
                 household_id
                 and is_owner
@@ -350,7 +350,7 @@ def render_header() -> None:
                 )
             ):
                 st.session_state.active_dialog = "delete_fridge"
-                delete_fridge_dialog()
+                delete_fridge_dialog(household_id)
             if (
                 st.button(
                     "Sign out", key="header_signout_btn", type="secondary", use_container_width=True

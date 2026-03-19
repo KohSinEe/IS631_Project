@@ -32,3 +32,9 @@ postgres_data/
 # Mac / Windows junk
 .DS_Store
 *.db
+
+.terraform/
+
+terraform.tfstate
+terraform.tfstate.backup
+.terraform.lock.hcl
