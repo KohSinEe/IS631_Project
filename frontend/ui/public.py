@@ -151,6 +151,11 @@ def render_public_view() -> None:
     if "sign_in_form_data" not in st.session_state:
         st.session_state.sign_in_form_data = {"email": "", "password": ""}
 
+    # Show verification dialog immediately after signup
+    if st.session_state.get("show_sign_up_verification"):
+        sign_up_verification_form()
+        return
+
     st.markdown(
         "<div class='landing-hero'>"
         "<h1>🥕 FridgeBuddy</h1>"
