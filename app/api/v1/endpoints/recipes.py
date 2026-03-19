@@ -27,7 +27,7 @@ async def generate(req: RecipeGenerateRequest, current_user: CurrentUserDep, db:
         result = await generate_recipes(
             pantry_items=[i.model_dump() for i in req.items],
             model=os.getenv("OLLAMA_MODEL", "mistral-large-3:675b-cloud"),
-            ollama_host=os.getenv("OLLAMA_HOST", "http://ollama:11434"),
+            ollama_host=os.getenv("OLLAMA_HOST", "http://localhost:11434"),
             inventory_only=req.inventory_only,
             max_recipes=req.max_recipes,
             preferences=req.preferences,
@@ -40,6 +40,16 @@ async def generate(req: RecipeGenerateRequest, current_user: CurrentUserDep, db:
         if "No pantry items" in msg:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
+                detail=msg,
+            )
+        if "Cannot connect to recipe model service" in msg or "Timed out while contacting recipe model service" in msg:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=msg,
+            )
+        if "Recipe model service returned HTTP" in msg or "Recipe model returned invalid response format" in msg:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=msg,
             )
         raise HTTPException(

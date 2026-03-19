@@ -152,19 +152,37 @@ class OllamaClient:
     async def chat(self, model: str, messages: List[Dict[str, str]]) -> str:
         url = f"{self.api_base}/chat"
         payload = {"model": model, "messages": messages, "stream": False}
-        async with httpx.AsyncClient(timeout=120) as client:
-            r = await client.post(url, json=payload, headers=self.headers)
-            r.raise_for_status()
-            data = r.json()
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                r = await client.post(url, json=payload, headers=self.headers)
+                r.raise_for_status()
+                data = r.json()
+        except httpx.ConnectError as exc:
+            raise ValueError(f"Cannot connect to recipe model service at {self.host}.") from exc
+        except httpx.TimeoutException as exc:
+            raise ValueError(f"Timed out while contacting recipe model service at {self.host}.") from exc
+        except httpx.HTTPStatusError as exc:
+            raise ValueError(
+                f"Recipe model service returned HTTP {exc.response.status_code}."
+            ) from exc
         return data.get("message", {}).get("content", "")
 
     async def generate(self, model: str, prompt: str) -> str:
         url = f"{self.api_base}/generate"
         payload = {"model": model, "prompt": prompt, "stream": False}
-        async with httpx.AsyncClient(timeout=120) as client:
-            r = await client.post(url, json=payload, headers=self.headers)
-            r.raise_for_status()
-            data = r.json()
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                r = await client.post(url, json=payload, headers=self.headers)
+                r.raise_for_status()
+                data = r.json()
+        except httpx.ConnectError as exc:
+            raise ValueError(f"Cannot connect to recipe model service at {self.host}.") from exc
+        except httpx.TimeoutException as exc:
+            raise ValueError(f"Timed out while contacting recipe model service at {self.host}.") from exc
+        except httpx.HTTPStatusError as exc:
+            raise ValueError(
+                f"Recipe model service returned HTTP {exc.response.status_code}."
+            ) from exc
         return data.get("response", "")
 
 
@@ -184,8 +202,7 @@ async def generate_recipes(
         raise ValueError("No pantry items provided.")
 
     if ollama_host is None:
-        ollama_host = os.getenv("OLLAMA_HOST", "http://ollama:11434")
-    print("OLLAMA_HOST:", ollama_host)
+        ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
     api_key = os.getenv("OLLAMA_API_KEY")
 
     prompt = _build_prompt(
@@ -210,7 +227,10 @@ async def generate_recipes(
         raw = await client.generate(model=model, prompt=prompt)
 
     parsed = _extract_json(raw)
-    validated = RecipeResponse.model_validate(parsed)
+    try:
+        validated = RecipeResponse.model_validate(parsed)
+    except ValidationError as exc:
+        raise ValueError("Recipe model returned invalid response format.") from exc
     return validated.model_dump()
 
 
@@ -241,7 +261,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--smoke-test", action="store_true")
     parser.add_argument("--model", default=os.getenv("OLLAMA_MODEL", "mistral-large-3"))
-    parser.add_argument("--ollama-host", default=os.getenv("OLLAMA_HOST", "http://ollama:11434"))
+    parser.add_argument("--ollama-host", default=os.getenv("OLLAMA_HOST", "http://localhost:11434"))
     args = parser.parse_args()
 
     if args.smoke_test:
