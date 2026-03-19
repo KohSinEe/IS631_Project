@@ -7,7 +7,7 @@ services:
       - .env
     environment:
       - DATABASE_URL=sqlite:////data/food_management.db
-      # - OLLAMA_HOST=http://ollama:11434  # disabled: requires t3.large+
+      - OLLAMA_HOST=http://ollama:11434  # disabled: requires t3.large+
     volumes:
       - db_data:/data
     healthcheck:
@@ -37,19 +37,19 @@ services:
       api:
         condition: service_healthy
 
-  # ollama:  # disabled: requires t3.large+ (4-8GB RAM). Uncomment for larger instances.
-  #   image: ollama/ollama:latest
-  #   ports:
-  #     - "11434:11434"
-  #   volumes:
-  #     - ollama_data:/root/.ollama
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 10
-  #     start_period: 30s
+  ollama:  # disabled: requires t3.large+ (4-8GB RAM). Uncomment for larger instances.
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
 volumes:
-  # ollama_data:
+  ollama_data:
   db_data:
