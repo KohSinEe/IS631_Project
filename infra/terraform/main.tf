@@ -128,6 +128,13 @@ resource "aws_iam_role_policy" "secrets_access" {
             "kms:ViaService" = "secretsmanager.${var.aws_region}.amazonaws.com"
           }
         }
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "cognito-idp:AdminInitiateAuth"
+        ],
+        Resource = var.cognito_user_pool_arn != "" ? var.cognito_user_pool_arn : "*"
       }
     ]
   })

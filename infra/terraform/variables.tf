@@ -50,6 +50,12 @@ variable "secrets_manager_arn" {
   type        = string
 }
 
+variable "cognito_user_pool_arn" {
+  description = "Cognito User Pool ARN used by backend auth flows"
+  type        = string
+  default     = ""
+}
+
 variable "deploy_id" {
   description = "Unique ID per deploy (e.g. git commit SHA) — forces instance replacement on every deploy"
   type        = string
