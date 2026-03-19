@@ -52,7 +52,7 @@ wait_for_http() {
 
 trap 'die "user_data failed at line $LINENO"' ERR
 
-log "Starting FridgeBuddy EC2 bootstrap"
+log "Starting FridgeBuddy EC2 bootstrap (deploy_id=${deploy_id})"
 check_required_vars
 
 retry 5 apt-get update -y
