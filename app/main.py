@@ -78,7 +78,7 @@ def custom_openapi():
             "type": "apiKey",
             "in": "cookie",
             "name": "access_token",
-            "description": "Access token stored in HTTP-only cookie"
+            "description": "Access token stored in HTTP-only cookie",
         }
     }
 

@@ -160,7 +160,9 @@ class OllamaClient:
         except httpx.ConnectError as exc:
             raise ValueError(f"Cannot connect to recipe model service at {self.host}.") from exc
         except httpx.TimeoutException as exc:
-            raise ValueError(f"Timed out while contacting recipe model service at {self.host}.") from exc
+            raise ValueError(
+                f"Timed out while contacting recipe model service at {self.host}."
+            ) from exc
         except httpx.HTTPStatusError as exc:
             raise ValueError(
                 f"Recipe model service returned HTTP {exc.response.status_code}."
@@ -178,7 +180,9 @@ class OllamaClient:
         except httpx.ConnectError as exc:
             raise ValueError(f"Cannot connect to recipe model service at {self.host}.") from exc
         except httpx.TimeoutException as exc:
-            raise ValueError(f"Timed out while contacting recipe model service at {self.host}.") from exc
+            raise ValueError(
+                f"Timed out while contacting recipe model service at {self.host}."
+            ) from exc
         except httpx.HTTPStatusError as exc:
             raise ValueError(
                 f"Recipe model service returned HTTP {exc.response.status_code}."

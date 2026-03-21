@@ -42,12 +42,18 @@ async def generate(req: RecipeGenerateRequest, current_user: CurrentUserDep, db:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=msg,
             )
-        if "Cannot connect to recipe model service" in msg or "Timed out while contacting recipe model service" in msg:
+        if (
+            "Cannot connect to recipe model service" in msg
+            or "Timed out while contacting recipe model service" in msg
+        ):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=msg,
             )
-        if "Recipe model service returned HTTP" in msg or "Recipe model returned invalid response format" in msg:
+        if (
+            "Recipe model service returned HTTP" in msg
+            or "Recipe model returned invalid response format" in msg
+        ):
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail=msg,
