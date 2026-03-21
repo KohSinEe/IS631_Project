@@ -122,8 +122,11 @@ def sign_up_verification_form() -> None:
             except APIError as err:
                 # Local mode does not require verification.
                 if err.status_code == 400:
+                    st.session_state.active_dialog = None
                     st.session_state.show_sign_up_verification = False
+                    st.session_state.verification_code = ""
                     st.success("Account created. Please sign in.")
+                    st.rerun()
                 else:
                     st.error(err.message)
 
@@ -135,12 +138,18 @@ def sign_up_verification_form() -> None:
                 from services.user import confirm_signup
 
                 confirm_signup(email, code)
+                st.session_state.active_dialog = None
                 st.session_state.show_sign_up_verification = False
+                st.session_state.verification_code = ""
                 st.success("Account verified. Please sign in.")
+                st.rerun()
             except APIError as err:
                 if err.status_code == 400:
+                    st.session_state.active_dialog = None
                     st.session_state.show_sign_up_verification = False
+                    st.session_state.verification_code = ""
                     st.success("Account created. Please sign in.")
+                    st.rerun()
                 else:
                     st.error(err.message)
 
