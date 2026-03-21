@@ -8,10 +8,10 @@ from services.invitations import (
     remove_household_member,
 )
 from services.user import (
-    get_current_user,
     add_allergens,
     delete_allergens,
     delete_household,
+    get_current_user,
     get_my_allergens,
     login_user,
     logout_user,
@@ -394,6 +394,7 @@ def manage_fridge_dialog() -> None:
         col1, col2 = st.columns([1, 1])
         with col1:
             if st.button("Cancel", type="secondary", use_container_width=True, key="delete_cancel_btn"):
+                _reset_dialog()
                 st.rerun()
         with col2:
             if st.button("Delete fridge", type="primary", use_container_width=True, key="delete_fridge_confirm_btn"):
