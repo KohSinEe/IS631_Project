@@ -7,7 +7,7 @@ services:
       - .env
     environment:
       - DATABASE_URL=sqlite:////data/food_management.db
-      - OLLAMA_HOST=0.0.0.0  # disabled: requires t3.large+
+      - OLLAMA_HOST=http://ollama:11434  # disabled: requires t3.large+
     volumes:
       - db_data:/data
     healthcheck:
