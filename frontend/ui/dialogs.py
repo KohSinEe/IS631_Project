@@ -68,16 +68,64 @@ def sign_up_dialog() -> None:
             st.error("Passwords do not match")
         else:
             try:
-                register_user(
-                    reg_email,
-                    reg_password,
-                    reg_password_confirm,
-                    reg_name,
-                    None,  # none = household input
-                )
+                register_user(reg_email, reg_password, reg_password_confirm, reg_name)
+                st.session_state.verification_email = reg_email
+                st.session_state.active_dialog = "signup_verification"
+                st.session_state.show_sign_up_verification = True
                 st.success("Account created. Please sign in.")
             except APIError as err:
                 st.error(err.message)
+
+
+@st.dialog("Verify Account", on_dismiss=_reset_dialog)
+def sign_up_verification_form() -> None:
+    st.markdown("<h3 style='text-align: center;'>Verify Account</h3>", unsafe_allow_html=True)
+    email = st.session_state.get("verification_email") or st.session_state.get("register_email", "")
+    with st.form("verify_signup_form"):
+        st.text_input("Email", value=email, key="verification_email", disabled=bool(email))
+        code = st.text_input("Verification Code", key="verification_code")
+        resend = st.form_submit_button("Resend Code")
+        verify = st.form_submit_button("Verify Account")
+
+    if resend:
+        if not email:
+            st.error("Email is required")
+        else:
+            try:
+                from services.user import resend_signup_code
+
+                resend_signup_code(email)
+                st.success("Verification code sent.")
+            except APIError as err:
+                # Local mode does not require verification.
+                if err.status_code == 400:
+                    st.session_state.active_dialog = None
+                    st.session_state.show_sign_up_verification = False
+                    st.success("Account created. Please sign in.")
+                    st.rerun()
+                else:
+                    st.error(err.message)
+
+    if verify:
+        if not email or not code:
+            st.error("Email and verification code are required")
+        else:
+            try:
+                from services.user import confirm_signup
+
+                confirm_signup(email, code)
+                st.session_state.active_dialog = None
+                st.session_state.show_sign_up_verification = False
+                st.success("Account verified. Please sign in.")
+                st.rerun()
+            except APIError as err:
+                if err.status_code == 400:
+                    st.session_state.active_dialog = None
+                    st.session_state.show_sign_up_verification = False
+                    st.success("Account created. Please sign in.")
+                    st.rerun()
+                else:
+                    st.error(err.message)
 
 
 @st.dialog("Forget Password", on_dismiss=_reset_dialog)

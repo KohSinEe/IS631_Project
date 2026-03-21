@@ -1,5 +1,10 @@
 import streamlit as st
-from ui.dialogs import reset_password_dialog, sign_in_dialog, sign_up_dialog
+from ui.dialogs import (
+    reset_password_dialog,
+    sign_in_dialog,
+    sign_up_dialog,
+    sign_up_verification_form,
+)
 
 
 def render_public_view() -> None:
@@ -7,6 +12,10 @@ def render_public_view() -> None:
         st.session_state.show_sign_in_form = False
     if "sign_in_form_data" not in st.session_state:
         st.session_state.sign_in_form_data = {"email": "", "password": ""}
+
+    if st.session_state.get("show_sign_up_verification"):
+        sign_up_verification_form()
+        return
 
     st.markdown(
         "<div class='landing-hero'>" "<h1>🥕 FridgeBuddy</h1>" "<p class='landing-tagline'>Stop guessing. Start managing.</p>" "</div>",
