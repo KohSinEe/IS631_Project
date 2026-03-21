@@ -52,6 +52,15 @@ def override_db(db: Session) -> Generator[None, None, None]:
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(autouse=True)
+def force_local_auth_provider() -> Generator[None, None, None]:
+    """Keep tests deterministic by avoiding Cognito calls from local .env settings."""
+    original = settings.AUTH_PROVIDER
+    settings.AUTH_PROVIDER = "local"
+    yield
+    settings.AUTH_PROVIDER = original
+
+
 @pytest.fixture()
 def create_test_user(db: Session) -> User:
     household = Household(name="Test Household")

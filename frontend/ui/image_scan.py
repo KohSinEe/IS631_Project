@@ -42,7 +42,11 @@ def handle_image_scan() -> None:
     # call the Vision API
     encoded_image = base64.b64encode(file_bytes).decode()
     url = f"https://vision.googleapis.com/v1/images:annotate?key={VISION_API_KEY}"
-    body = {"requests": [{"image": {"content": encoded_image}, "features": [{"type": "LABEL_DETECTION"}]}]}
+    body = {
+        "requests": [
+            {"image": {"content": encoded_image}, "features": [{"type": "LABEL_DETECTION"}]}
+        ]
+    }
     response = requests.post(url, json=body)
     if response.status_code != 200:
         st.error(f"Vision API request failed ({response.status_code})")
@@ -91,7 +95,11 @@ def handle_image_scan() -> None:
     category = st.selectbox(
         "Category",
         CATEGORY_OPTIONS,
-        index=(CATEGORY_OPTIONS.index(default_cat) if default_cat in CATEGORY_OPTIONS else CATEGORY_OPTIONS.index("Other")),
+        index=(
+            CATEGORY_OPTIONS.index(default_cat)
+            if default_cat in CATEGORY_OPTIONS
+            else CATEGORY_OPTIONS.index("Other")
+        ),
     )
 
     if st.button("Add to inventory"):

@@ -15,6 +15,7 @@ SESSION_DEFAULTS = {
     # Public view: do not auto-open sign-in/sign-up dialogs after logout
     "show_sign_in_form": False,
     "show_sign_up_form": False,
+    "show_sign_up_verification": False,
     "show_pw_reset": False,
     # Dashboard dialogs: reset on logout so profile doesn't open on next login
     "show_household_setup": False,
@@ -25,8 +26,11 @@ SESSION_DEFAULTS = {
     "login_password": "",
     "register_email": "",
     "register_password": "",
+    "register_password_confirm": "",
     "register_name": "",
     "register_household": "",
+    "verification_email": "",
+    "verification_code": "",
 }
 
 

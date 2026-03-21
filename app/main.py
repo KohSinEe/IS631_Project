@@ -17,12 +17,13 @@ from dotenv import load_dotenv
 
 from app.config import settings
 from app.api.v1.api import api_router
-from app.database import Base, engine
+from app.database import Base, engine, apply_startup_schema_patches
 
 load_dotenv()
 
 # Create database tables from current schema
 Base.metadata.create_all(bind=engine)
+apply_startup_schema_patches()
 
 # Create FastAPI application
 app = FastAPI(
@@ -59,33 +60,33 @@ def health_check():
     return {"status": "healthy", "version": settings.VERSION}
 
 
-# def custom_openapi():
-#     """Customize OpenAPI schema for cookie-based authentication."""
-#     if app.openapi_schema:
-#         return app.openapi_schema
+def custom_openapi():
+    """Customize OpenAPI schema for cookie-based authentication."""
+    if app.openapi_schema:
+        return app.openapi_schema
 
-#     openapi_schema = get_openapi(
-#         title=settings.APP_NAME,
-#         version=settings.VERSION,
-#         description="Smart household food management system API",
-#         routes=app.routes,
-#     )
+    openapi_schema = get_openapi(
+        title=settings.APP_NAME,
+        version=settings.VERSION,
+        description="Smart household food management system API",
+        routes=app.routes,
+    )
 
-#     # Add cookie security scheme
-#     openapi_schema["components"]["securitySchemes"] = {
-#         "cookieAuth": {
-#             "type": "apiKey",
-#             "in": "cookie",
-#             "name": "access_token",
-#             "description": "Access token stored in HTTP-only cookie"
-#         }
-#     }
+    # Add cookie security scheme
+    openapi_schema["components"]["securitySchemes"] = {
+        "cookieAuth": {
+            "type": "apiKey",
+            "in": "cookie",
+            "name": "access_token",
+            "description": "Access token stored in HTTP-only cookie",
+        }
+    }
 
-#     app.openapi_schema = openapi_schema
-#     return app.openapi_schema
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
 
 
-# app.openapi = custom_openapi
+app.openapi = custom_openapi
 
 
 if __name__ == "__main__":

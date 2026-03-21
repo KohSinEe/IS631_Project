@@ -23,6 +23,16 @@ def register_user(
     return api_request("post", "/auth/register", json=payload)  # type: ignore[return-value]
 
 
+def confirm_signup(email: str, confirmation_code: str) -> None:
+    payload = {"email": email, "confirmation_code": confirmation_code}
+    api_request("post", "/auth/confirm-signup", json=payload)
+
+
+def resend_signup_code(email: str) -> None:
+    payload = {"email": email}
+    api_request("post", "/auth/resend-confirmation", json=payload)
+
+
 def login_user(email: str, password: str) -> None:
     data = {"username": email, "password": password}
     api_request("post", "/auth/login", data=data)
@@ -70,6 +80,14 @@ def update_user(name: str) -> None:
         raise
 
 
+def change_password(current_password: str, new_password: str) -> None:
+    payload = {
+        "current_password": current_password,
+        "new_password": new_password,
+    }
+    api_request("put", "/users/me/password", json=payload)
+
+
 def reset_password(email: str, new_password: str) -> None:
     payload = {"email": email, "new_password": new_password}
     try:
@@ -80,6 +98,41 @@ def reset_password(email: str, new_password: str) -> None:
             st.success("Password reset successful. Please sign in.")
     except APIError as e:
         st.error(f"Failed to reset password: {e}")
+        print(f"APIError: {e}")
+        raise
+
+
+def request_password_reset(email: str, new_password: Optional[str] = None) -> None:
+    payload = {"email": email}
+    try:
+        api_request("post", "/users/reset-password/request", json=payload)
+    except APIError as err:
+        # Local auth mode has no verification-code step.
+        if err.status_code == 400:
+            if new_password:
+                reset_password(email, new_password)
+                return
+            raise APIError(
+                "Local auth mode does not use verification codes. Enter a new password and click Reset Password.",
+                err.status_code,
+            )
+        raise
+
+
+def confirm_password_reset(email: str, confirmation_code: str, new_password: str) -> None:
+    payload = {
+        "email": email,
+        "confirmation_code": confirmation_code,
+        "new_password": new_password,
+    }
+
+    try:
+        api_request("post", "/users/reset-password/confirm", json=payload)
+    except APIError as err:
+        # Backward compatibility for local-auth mode.
+        if err.status_code == 400:
+            reset_password(email, new_password)
+            return
         raise
 
 

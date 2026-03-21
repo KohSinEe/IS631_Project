@@ -93,6 +93,9 @@ def render_household_setup() -> None:
         st.divider()
         _render_pending_invitations(pending)
         st.divider()
-        if st.button("Sign out", use_container_width=True) or st.session_state.active_dialog == "logout":
+        if (
+            st.button("Sign out", use_container_width=True)
+            or st.session_state.active_dialog == "logout"
+        ):
             st.session_state.active_dialog = "logout"
             logout_dialog()

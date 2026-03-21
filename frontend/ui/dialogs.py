@@ -58,7 +58,9 @@ def sign_up_dialog() -> None:
     with st.form("signup_form"):
         reg_email = st.text_input("Email", key="register_email")
         reg_password = st.text_input("Password", type="password", key="register_password")
-        reg_password_confirm = st.text_input("Confirm Password", type="password", key="register_password_confirm")
+        reg_password_confirm = st.text_input(
+            "Confirm Password", type="password", key="register_password_confirm"
+        )
         reg_name = st.text_input("Display name", key="register_name")
         submitted = st.form_submit_button("Create account")
     if submitted:
@@ -130,23 +132,45 @@ def sign_up_verification_form() -> None:
 
 @st.dialog("Forget Password", on_dismiss=_reset_dialog)
 def reset_password_dialog() -> None:
+    from services.user import confirm_password_reset, request_password_reset
+
+    code_sent = st.session_state.get("reset_code_sent", False)
+
     with st.form("reset_pw_form"):
         email = st.text_input("Email", key="reset_email")
-        new_password = st.text_input("New Password", type="password", key="reset_new_password")
-        confirm_password = st.text_input("Confirm New Password", type="password", key="reset_confirm_password")
-        submitted = st.form_submit_button("Reset Password")
+        if code_sent:
+            confirmation_code = st.text_input(
+                "Verification Code (from email)", key="reset_confirmation_code"
+            )
+            new_password = st.text_input("New Password", type="password", key="reset_new_password")
+            confirm_password = st.text_input(
+                "Confirm New Password", type="password", key="reset_confirm_password"
+            )
+        send_code = st.form_submit_button("Send Verification Code", disabled=code_sent)
+        submitted = st.form_submit_button("Reset Password", disabled=not code_sent)
+
+    if send_code:
+        if not email:
+            st.error("Email is required")
+        else:
+            try:
+                request_password_reset(email)
+                st.session_state.reset_code_sent = True
+                st.success("Verification code sent. Check your email.")
+                st.rerun()
+            except APIError as err:
+                st.error(err.message)
+
     if submitted:
-        if not email or not new_password or not confirm_password:
+        if not email or not confirmation_code or not new_password or not confirm_password:
             st.error("All fields are required")
         elif new_password != confirm_password:
             st.error("Passwords do not match")
         else:
             try:
-                from services.user import reset_password
-
-                reset_password(email, new_password)
+                confirm_password_reset(email, confirmation_code, new_password)
+                st.session_state.reset_code_sent = False
                 st.success("Password reset successful. Please sign in.")
-                st.session_state.show_pw_reset = False
             except APIError as err:
                 st.error(err.message)
 

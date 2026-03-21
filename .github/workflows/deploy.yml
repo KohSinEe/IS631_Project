@@ -1,0 +1,156 @@
+name: Deploy Infrastructure
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [dev, main]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-${{ github.event.pull_request.base.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-staging:
+    name: Deploy Staging
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'dev'
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout merged commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION != '' && vars.AWS_REGION || 'ap-southeast-1' }}
+
+      - name: Terraform Init
+        working-directory: infra/terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=tfstate-backend-025581116416" \
+            -backend-config="key=staging/terraform.tfstate" \
+            -backend-config="dynamodb_table=tfstate-dynamo-025581116416" \
+            -backend-config="region=${{ vars.AWS_REGION != '' && vars.AWS_REGION || 'ap-southeast-1' }}" \
+            -backend-config="encrypt=true"
+
+      - name: Terraform Validate
+        working-directory: infra/terraform
+        run: |
+          terraform fmt -check
+          terraform validate
+
+      - name: Terraform Plan (staging)
+        working-directory: infra/terraform
+        run: |
+          terraform plan \
+            -out=tfplan \
+            -var-file=staging.tfvars \
+            -var="deploy_id=${{ github.event.pull_request.merge_commit_sha }}"
+
+      - name: Terraform Apply (staging)
+        working-directory: infra/terraform
+        run: terraform apply -auto-approve tfplan
+
+  plan-production:
+    name: Plan Production
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout merged commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION != '' && vars.AWS_REGION || 'ap-southeast-1' }}
+
+      - name: Terraform Init
+        working-directory: infra/terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=tfstate-backend-025581116416" \
+            -backend-config="key=production/terraform.tfstate" \
+            -backend-config="dynamodb_table=tfstate-dynamo-025581116416" \
+            -backend-config="region=${{ vars.AWS_REGION != '' && vars.AWS_REGION || 'ap-southeast-1' }}" \
+            -backend-config="encrypt=true"
+
+      - name: Terraform Validate
+        working-directory: infra/terraform
+        run: |
+          terraform fmt -check
+          terraform validate
+
+      - name: Terraform Plan (production)
+        working-directory: infra/terraform
+        run: |
+          terraform plan \
+            -out=tfplan \
+            -var-file=production.tfvars \
+            -var="deploy_id=${{ github.event.pull_request.merge_commit_sha }}"
+
+      - name: Upload Terraform plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-production
+          path: infra/terraform/tfplan
+
+  apply-production:
+    name: Apply Production
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    needs: plan-production
+    environment: production
+
+    steps:
+      - name: Checkout merged commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION != '' && vars.AWS_REGION || 'ap-southeast-1' }}
+
+      - name: Terraform Init
+        working-directory: infra/terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=tfstate-backend-025581116416" \
+            -backend-config="key=production/terraform.tfstate" \
+            -backend-config="dynamodb_table=tfstate-dynamo-025581116416" \
+            -backend-config="region=${{ vars.AWS_REGION != '' && vars.AWS_REGION || 'ap-southeast-1' }}" \
+            -backend-config="encrypt=true"
+
+      - name: Download Terraform plan artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-production
+          path: infra/terraform
+
+      - name: Terraform Apply (production)
+        working-directory: infra/terraform
+        run: terraform apply -auto-approve tfplan
