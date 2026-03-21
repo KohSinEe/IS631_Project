@@ -81,9 +81,7 @@ def reset_password_dialog() -> None:
             confirmation_code = st.text_input(
                 "Verification Code (from email)", key="reset_confirmation_code"
             )
-            new_password = st.text_input(
-                "New Password", type="password", key="reset_new_password"
-            )
+            new_password = st.text_input("New Password", type="password", key="reset_new_password")
             confirm_password = st.text_input(
                 "Confirm New Password", type="password", key="reset_confirm_password"
             )
