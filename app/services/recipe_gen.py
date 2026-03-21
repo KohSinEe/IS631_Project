@@ -189,7 +189,7 @@ class OllamaClient:
 async def generate_recipes(
     pantry_items: List[Dict[str, Any]],
     *,
-    model: str = "mistral-large-3:675b-cloud",
+    model: str = "mistral-large-3",
     ollama_host: Optional[str] = None,
     inventory_only: bool = True,
     max_recipes: int = 3,
