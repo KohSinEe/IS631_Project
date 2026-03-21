@@ -114,7 +114,7 @@ fi
 
 # Read the model directly from Secrets Manager materialized in .env.
 OLLAMA_MODEL_VALUE="$(awk -F= '$1=="OLLAMA_MODEL" { print substr($0, index($0, "=") + 1); exit }' .env)"
-OLLAMA_MODEL_VALUE="${OLLAMA_MODEL_VALUE%%[[:space:]]*}"
+OLLAMA_MODEL_VALUE="$${OLLAMA_MODEL_VALUE%%[[:space:]]*}"
 
 [ -n "$OLLAMA_MODEL_VALUE" ] || die "OLLAMA_MODEL is missing in Secrets Manager secret"
 
@@ -126,12 +126,12 @@ docker compose up -d --build
 docker compose ps
 
 if [[ "$OLLAMA_MODEL_VALUE" == *"cloud"* ]]; then
-  log "Skipping local model pull for cloud model: ${OLLAMA_MODEL_VALUE}"
+  log "Skipping local model pull for cloud model: $${OLLAMA_MODEL_VALUE}"
 else
-  log "Pulling local Ollama model: ${OLLAMA_MODEL_VALUE}"
+  log "Pulling local Ollama model: $${OLLAMA_MODEL_VALUE}"
   retry 3 docker compose exec -T ollama ollama pull "$OLLAMA_MODEL_VALUE" || {
     docker compose logs ollama --tail 200 || true
-    die "Failed to pull local Ollama model: ${OLLAMA_MODEL_VALUE}"
+    die "Failed to pull local Ollama model: $${OLLAMA_MODEL_VALUE}"
   }
 fi
 
