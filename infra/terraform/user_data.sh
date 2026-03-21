@@ -112,12 +112,29 @@ fi
 
 [ -s .env ] || die ".env file is missing or empty"
 
+OLLAMA_MODEL_VALUE="$(awk -F= '$1=="OLLAMA_MODEL" { print substr($0, index($0, "=") + 1); exit }' .env)"
+if [ -z "$OLLAMA_MODEL_VALUE" ]; then
+  OLLAMA_MODEL_VALUE="llama3.2:3b"
+  printf 'OLLAMA_MODEL=%s\n' "$OLLAMA_MODEL_VALUE" >> .env
+  log "OLLAMA_MODEL missing in secret; defaulted to ${OLLAMA_MODEL_VALUE}"
+fi
+
 log "Validating docker compose configuration"
 docker compose config --quiet
 
 log "Starting containers"
 docker compose up -d --build
 docker compose ps
+
+if [[ "$OLLAMA_MODEL_VALUE" == *"cloud"* ]]; then
+  log "Skipping local model pull for cloud model: ${OLLAMA_MODEL_VALUE}"
+else
+  log "Pulling local Ollama model: ${OLLAMA_MODEL_VALUE}"
+  retry 3 docker compose exec -T ollama ollama pull "$OLLAMA_MODEL_VALUE" || {
+    docker compose logs ollama --tail 200 || true
+    die "Failed to pull local Ollama model: ${OLLAMA_MODEL_VALUE}"
+  }
+fi
 
 wait_for_http "http://127.0.0.1:8000/docs" "FastAPI" 36 5 || {
   docker compose logs api --tail 200 || true
