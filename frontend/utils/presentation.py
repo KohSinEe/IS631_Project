@@ -45,7 +45,10 @@ def render_allergen_badges(allergens: list[str]) -> None:
     if not allergens:
         st.caption("None set")
         return
-    badge_style = "background:#FF4B4B22; color:#FF4B4B; border:1px solid #FF4B4B55;" "padding:2px 10px; border-radius:999px; font-size:0.85rem;"
+    badge_style = (
+        "background:#FF4B4B22; color:#FF4B4B; border:1px solid #FF4B4B55;"
+        "padding:2px 10px; border-radius:999px; font-size:0.85rem;"
+    )
     badges = " ".join(f'<span style="{badge_style}">{escape(str(a))}</span>' for a in allergens)
     st.markdown(badges, unsafe_allow_html=True)
 
