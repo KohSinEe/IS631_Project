@@ -16,6 +16,7 @@ env/
 
 # Environment variables
 .env
+.env.example
 
 # Local config (if you use config.py pattern)
 config.py
