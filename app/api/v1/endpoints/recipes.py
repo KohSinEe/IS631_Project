@@ -26,7 +26,7 @@ async def generate(req: RecipeGenerateRequest, current_user: CurrentUserDep, db:
     try:
         result = await generate_recipes(
             pantry_items=[i.model_dump() for i in req.items],
-            model=os.getenv("OLLAMA_MODEL", "mistral-large-3"),
+            model=os.getenv("OLLAMA_MODEL", "llama3.2:3b"),
             ollama_host=os.getenv("OLLAMA_HOST", "http://localhost:11434"),
             inventory_only=req.inventory_only,
             max_recipes=req.max_recipes,

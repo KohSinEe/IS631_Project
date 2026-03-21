@@ -124,7 +124,6 @@ def sign_up_verification_form() -> None:
                 if err.status_code == 400:
                     st.session_state.active_dialog = None
                     st.session_state.show_sign_up_verification = False
-                    st.session_state.verification_code = ""
                     st.success("Account created. Please sign in.")
                     st.rerun()
                 else:
@@ -140,14 +139,12 @@ def sign_up_verification_form() -> None:
                 confirm_signup(email, code)
                 st.session_state.active_dialog = None
                 st.session_state.show_sign_up_verification = False
-                st.session_state.verification_code = ""
                 st.success("Account verified. Please sign in.")
                 st.rerun()
             except APIError as err:
                 if err.status_code == 400:
                     st.session_state.active_dialog = None
                     st.session_state.show_sign_up_verification = False
-                    st.session_state.verification_code = ""
                     st.success("Account created. Please sign in.")
                     st.rerun()
                 else:
