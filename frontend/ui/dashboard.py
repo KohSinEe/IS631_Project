@@ -211,7 +211,21 @@ def render_dashboard() -> None:
         ensure_inventory_loaded()
         return
 
-    add_item_col, edit_item_col = st.columns([1, 1])
+    if user.get("household_role") != "child":
+        add_item_col, edit_item_col = st.columns([1, 1])
+
+        with add_item_col:
+            if st.button("Add Item", use_container_width=True):
+                st.session_state.active_dialog = "add_item"
+                add_item_dialog()
+        with edit_item_col:
+            if st.button("Edit Items", use_container_width=True) or st.session_state.active_dialog == "edit_item":
+                st.session_state.active_dialog = "edit_item"
+                edit_item_dialog(st.session_state.filtered_inventory)
+    else:
+        if st.button("Edit Items", use_container_width=True) or st.session_state.active_dialog == "edit_item":
+            st.session_state.active_dialog = "edit_item"
+            edit_item_dialog(st.session_state.filtered_inventory)
 
     if "category_filter" not in st.session_state:
         st.session_state.category_filter = "All"
@@ -222,15 +236,6 @@ def render_dashboard() -> None:
 
     st.session_state.filtered_inventory = filter_inventory(st.session_state.inventory, st.session_state.category_filter)
     st.session_state.filtered_inventory = render_inventory_table(st.session_state.filtered_inventory, st.session_state.sort_by_expiry)
-
-    with add_item_col:
-        if st.button("Add Item", use_container_width=True):
-            st.session_state.active_dialog = "add_item"
-            add_item_dialog()
-    with edit_item_col:
-        if st.button("Edit Items", use_container_width=True) or st.session_state.active_dialog == "edit_item":
-            st.session_state.active_dialog = "edit_item"
-            edit_item_dialog(st.session_state.filtered_inventory)
 
     st.divider()
 
