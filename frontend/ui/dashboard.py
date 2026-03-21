@@ -55,18 +55,31 @@ def render_header() -> None:
         st.markdown("<div style='margin-top: 1.5rem'></div>", unsafe_allow_html=True)
 
         with st.popover("Account"):
-            if st.button("Profile", key="header_profile_btn", use_container_width=True) or st.session_state.active_dialog == "user_profile":
+            if (
+                st.button("Profile", key="header_profile_btn", use_container_width=True)
+                or st.session_state.active_dialog == "user_profile"
+            ):
                 st.session_state.active_dialog = "user_profile"
                 profile_dialog()
-            if household_id and (st.button("Manage Fridge", key="manage_fridge_button", use_container_width=True) or st.session_state.active_dialog == "manage_fridge"):
+            if household_id and (
+                st.button("Manage Fridge", key="manage_fridge_button", use_container_width=True)
+                or st.session_state.active_dialog == "manage_fridge"
+            ):
                 st.session_state.active_dialog = "manage_fridge"
                 manage_fridge_dialog()
-            if st.button("Sign out", key="header_signout_btn", type="secondary", use_container_width=True) or st.session_state.active_dialog == "logout":
+            if (
+                st.button(
+                    "Sign out", key="header_signout_btn", type="secondary", use_container_width=True
+                )
+                or st.session_state.active_dialog == "logout"
+            ):
                 st.session_state.active_dialog = "logout"
                 logout_dialog()
 
 
-def render_metric(label: str, value: Any, column: st.delta_generator.DeltaGenerator, color: str) -> None:
+def render_metric(
+    label: str, value: Any, column: st.delta_generator.DeltaGenerator, color: str
+) -> None:
     color_class = {
         "blue": "",
         "green": "metric-green",
@@ -97,10 +110,16 @@ def render_expiry_alerts(summary: Dict[str, Any]) -> None:
         st.write(f"• {item['name']} — {item['quantity']} {item['unit']} by {expiry}")
 
 
-def render_inventory_table(items: List[Dict[str, Any]], sort_by_expiry: bool) -> List[Dict[str, Any]]:
+def render_inventory_table(
+    items: List[Dict[str, Any]], sort_by_expiry: bool
+) -> List[Dict[str, Any]]:
     working = items.copy()
     if sort_by_expiry:
-        working.sort(key=lambda entry: (parse_expiry(entry["expiry_date"]) if entry.get("expiry_date") else date.max))
+        working.sort(
+            key=lambda entry: (
+                parse_expiry(entry["expiry_date"]) if entry.get("expiry_date") else date.max
+            )
+        )
 
     rows: List[Dict[str, Any]] = []
     soon_cutoff = date.today() + timedelta(days=EXPIRY_ALERT_DAYS)
@@ -166,7 +185,9 @@ def render_dashboard() -> None:
             inv_id = inv.get("id")
             if inv_id is None:
                 continue
-            st.write(f"**{inv.get('household_name', 'Fridge')}** — {inviter} invited you as **{role_label}**.")
+            st.write(
+                f"**{inv.get('household_name', 'Fridge')}** — {inviter} invited you as **{role_label}**."
+            )
             col1, col2, _ = st.columns([1, 1, 4])
             with col1:
                 if st.button("Accept", key=f"accept_inv_{inv_id}"):
@@ -212,7 +233,9 @@ def render_dashboard() -> None:
     household_id = st.session_state.household_id
     if not household_id:
         if not pending:
-            st.info("You do not belong to a fridge yet. Get invited by an owner, or create an account with a household name.")
+            st.info(
+                "You do not belong to a fridge yet. Get invited by an owner, or create an account with a household name."
+            )
         ensure_inventory_loaded()
         return
 
@@ -224,11 +247,17 @@ def render_dashboard() -> None:
                 st.session_state.active_dialog = "add_item"
                 add_item_dialog()
         with edit_item_col:
-            if st.button("Edit Items", use_container_width=True) or st.session_state.active_dialog == "edit_item":
+            if (
+                st.button("Edit Items", use_container_width=True)
+                or st.session_state.active_dialog == "edit_item"
+            ):
                 st.session_state.active_dialog = "edit_item"
                 edit_item_dialog(st.session_state.filtered_inventory)
     else:
-        if st.button("Edit Items", use_container_width=True) or st.session_state.active_dialog == "edit_item":
+        if (
+            st.button("Edit Items", use_container_width=True)
+            or st.session_state.active_dialog == "edit_item"
+        ):
             st.session_state.active_dialog = "edit_item"
             edit_item_dialog(st.session_state.filtered_inventory)
 
@@ -239,8 +268,12 @@ def render_dashboard() -> None:
     _ = st.selectbox("Filter by category", filter_options, key="category_filter")
     _ = st.toggle("Sort by expiry date", key="sort_by_expiry")
 
-    st.session_state.filtered_inventory = filter_inventory(st.session_state.inventory, st.session_state.category_filter)
-    st.session_state.filtered_inventory = render_inventory_table(st.session_state.filtered_inventory, st.session_state.sort_by_expiry)
+    st.session_state.filtered_inventory = filter_inventory(
+        st.session_state.inventory, st.session_state.category_filter
+    )
+    st.session_state.filtered_inventory = render_inventory_table(
+        st.session_state.filtered_inventory, st.session_state.sort_by_expiry
+    )
 
     st.divider()
 
