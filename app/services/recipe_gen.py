@@ -264,7 +264,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--smoke-test", action="store_true")
-    parser.add_argument("--model", default=os.getenv("OLLAMA_MODEL", "mistral-large-3"))
+    parser.add_argument("--model", default=os.getenv("OLLAMA_MODEL", "mistral"))
     parser.add_argument("--ollama-host", default=os.getenv("OLLAMA_HOST", "http://localhost:11434"))
     args = parser.parse_args()
 
