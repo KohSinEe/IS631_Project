@@ -24,8 +24,7 @@ make setup
 ```bash
 make run
 ```
-4. Ensure Ollama is running with `mistral-large-3:675b-cloud` served
-5. Initialise the frontend interface
+4. Initialise the frontend interface
 ```bash
 make st
 ```
@@ -59,7 +58,7 @@ For a one-page summary of what’s covered: `uv run pytest --cov=app --cov-repor
 
 ## Recipe Generator
 
-`recipe` endpoint available for generating recipe suggestions from a list of pantry items. It accepts a JSON list of pantry items and returns JSON-compatible recipe outputs. Recipe generation is done using the `mistral-large-3:675b-cloud` model provisioned through Ollama.
+`recipe` endpoint available for generating recipe suggestions from a list of pantry items. It accepts a JSON list of pantry items and returns JSON-compatible recipe outputs. Recipe generation is done using the `llama3.2:3b` model provisioned through Ollama.
 
 ### Quick notes
 - Input: list of pantry item dicts (each with at least a `name`, optional `quantity` and `unit`).
