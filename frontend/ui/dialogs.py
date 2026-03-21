@@ -58,9 +58,7 @@ def sign_up_dialog() -> None:
     with st.form("signup_form"):
         reg_email = st.text_input("Email", key="register_email")
         reg_password = st.text_input("Password", type="password", key="register_password")
-        reg_password_confirm = st.text_input(
-            "Confirm Password", type="password", key="register_password_confirm"
-        )
+        reg_password_confirm = st.text_input("Confirm Password", type="password", key="register_password_confirm")
         reg_name = st.text_input("Display name", key="register_name")
         submitted = st.form_submit_button("Create account")
     if submitted:
@@ -70,11 +68,12 @@ def sign_up_dialog() -> None:
             st.error("Passwords do not match")
         else:
             try:
-                register_user(reg_email, reg_password, reg_password_confirm, reg_name)
+                register_user(reg_email, reg_password, reg_password_confirm, reg_name, None)
                 st.session_state.verification_email = reg_email
                 st.session_state.active_dialog = "signup_verification"
                 st.session_state.show_sign_up_verification = True
                 st.success("Account created. Please sign in.")
+                st.rerun()
             except APIError as err:
                 st.error(err.message)
 
@@ -139,13 +138,9 @@ def reset_password_dialog() -> None:
     with st.form("reset_pw_form"):
         email = st.text_input("Email", key="reset_email")
         if code_sent:
-            confirmation_code = st.text_input(
-                "Verification Code (from email)", key="reset_confirmation_code"
-            )
+            confirmation_code = st.text_input("Verification Code (from email)", key="reset_confirmation_code")
             new_password = st.text_input("New Password", type="password", key="reset_new_password")
-            confirm_password = st.text_input(
-                "Confirm New Password", type="password", key="reset_confirm_password"
-            )
+            confirm_password = st.text_input("Confirm New Password", type="password", key="reset_confirm_password")
         send_code = st.form_submit_button("Send Verification Code", disabled=code_sent)
         submitted = st.form_submit_button("Reset Password", disabled=not code_sent)
 
