@@ -112,12 +112,11 @@ fi
 
 [ -s .env ] || die ".env file is missing or empty"
 
+# Read the model directly from Secrets Manager materialized in .env.
 OLLAMA_MODEL_VALUE="$(awk -F= '$1=="OLLAMA_MODEL" { print substr($0, index($0, "=") + 1); exit }' .env)"
-if [ -z "$OLLAMA_MODEL_VALUE" ]; then
-  OLLAMA_MODEL_VALUE="llama3.2:3b"
-  printf 'OLLAMA_MODEL=%s\n' "$OLLAMA_MODEL_VALUE" >> .env
-  log "OLLAMA_MODEL missing in secret; defaulted to ${OLLAMA_MODEL_VALUE}"
-fi
+OLLAMA_MODEL_VALUE="${OLLAMA_MODEL_VALUE%%[[:space:]]*}"
+
+[ -n "$OLLAMA_MODEL_VALUE" ] || die "OLLAMA_MODEL is missing in Secrets Manager secret"
 
 log "Validating docker compose configuration"
 docker compose config --quiet
