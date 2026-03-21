@@ -92,7 +92,9 @@ def reset_password(email: str, new_password: str) -> None:
     payload = {"email": email, "new_password": new_password}
     try:
         response = api_request("post", "/users/reset-password", json=payload)
-        if not response or (isinstance(response, dict) and response.get("message") != "Password reset successful"):
+        if not response or (
+            isinstance(response, dict) and response.get("message") != "Password reset successful"
+        ):
             st.error("Password reset failed. Please check your email and try again.")
         else:
             st.success("Password reset successful. Please sign in.")

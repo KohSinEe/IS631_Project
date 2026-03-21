@@ -327,10 +327,18 @@ def render_header() -> None:
             ):
                 st.session_state.active_dialog = "user_profile"
                 profile_dialog()
-            if household_id and (st.button("Manage Fridge", key="manage_fridge_button", use_container_width=True) or st.session_state.active_dialog == "manage_fridge"):
+            if household_id and (
+                st.button("Manage Fridge", key="manage_fridge_button", use_container_width=True)
+                or st.session_state.active_dialog == "manage_fridge"
+            ):
                 st.session_state.active_dialog = "manage_fridge"
                 manage_fridge_dialog()
-            if st.button("Sign out", key="header_signout_btn", type="secondary", use_container_width=True) or st.session_state.active_dialog == "logout":
+            if (
+                st.button(
+                    "Sign out", key="header_signout_btn", type="secondary", use_container_width=True
+                )
+                or st.session_state.active_dialog == "logout"
+            ):
                 st.session_state.active_dialog = "logout"
                 logout_dialog()
 
@@ -505,11 +513,17 @@ def render_dashboard() -> None:
                 st.session_state.active_dialog = "add_item"
                 add_item_dialog()
         with edit_item_col:
-            if st.button("Edit Items", use_container_width=True) or st.session_state.active_dialog == "edit_item":
+            if (
+                st.button("Edit Items", use_container_width=True)
+                or st.session_state.active_dialog == "edit_item"
+            ):
                 st.session_state.active_dialog = "edit_item"
                 edit_item_dialog(st.session_state.filtered_inventory)
     else:
-        if st.button("Edit Items", use_container_width=True) or st.session_state.active_dialog == "edit_item":
+        if (
+            st.button("Edit Items", use_container_width=True)
+            or st.session_state.active_dialog == "edit_item"
+        ):
             st.session_state.active_dialog = "edit_item"
             edit_item_dialog(st.session_state.filtered_inventory)
 

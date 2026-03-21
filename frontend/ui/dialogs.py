@@ -58,7 +58,9 @@ def sign_up_dialog() -> None:
     with st.form("signup_form"):
         reg_email = st.text_input("Email", key="register_email")
         reg_password = st.text_input("Password", type="password", key="register_password")
-        reg_password_confirm = st.text_input("Confirm Password", type="password", key="register_password_confirm")
+        reg_password_confirm = st.text_input(
+            "Confirm Password", type="password", key="register_password_confirm"
+        )
         reg_name = st.text_input("Display name", key="register_name")
         submitted = st.form_submit_button("Create account")
     if submitted:
@@ -138,9 +140,13 @@ def reset_password_dialog() -> None:
     with st.form("reset_pw_form"):
         email = st.text_input("Email", key="reset_email")
         if code_sent:
-            confirmation_code = st.text_input("Verification Code (from email)", key="reset_confirmation_code")
+            confirmation_code = st.text_input(
+                "Verification Code (from email)", key="reset_confirmation_code"
+            )
             new_password = st.text_input("New Password", type="password", key="reset_new_password")
-            confirm_password = st.text_input("Confirm New Password", type="password", key="reset_confirm_password")
+            confirm_password = st.text_input(
+                "Confirm New Password", type="password", key="reset_confirm_password"
+            )
         send_code = st.form_submit_button("Send Verification Code", disabled=code_sent)
         submitted = st.form_submit_button("Reset Password", disabled=not code_sent)
 
@@ -271,8 +277,18 @@ def profile_dialog() -> None:
             # Add allergens section
             if available:
                 st.write("**Add allergens:**")
-                to_add = st.multiselect("Select allergens to add", options=available, key="add_allergens_multiselect", label_visibility="collapsed")
-                if st.button("Add Selected", key="add_allergens_btn", use_container_width=True, disabled=not to_add):
+                to_add = st.multiselect(
+                    "Select allergens to add",
+                    options=available,
+                    key="add_allergens_multiselect",
+                    label_visibility="collapsed",
+                )
+                if st.button(
+                    "Add Selected",
+                    key="add_allergens_btn",
+                    use_container_width=True,
+                    disabled=not to_add,
+                ):
                     try:
                         add_allergens(to_add)
                         st.session_state.current_allergens += to_add
@@ -285,11 +301,23 @@ def profile_dialog() -> None:
             # Remove allergens section
             if st.session_state.current_allergens:
                 st.write("**Remove allergens:**")
-                to_remove = st.multiselect("Select allergens to remove", options=st.session_state.current_allergens, key="remove_allergens_multiselect", label_visibility="collapsed")
-                if st.button("Remove Selected", key="remove_allergens_btn", use_container_width=True, disabled=not to_remove):
+                to_remove = st.multiselect(
+                    "Select allergens to remove",
+                    options=st.session_state.current_allergens,
+                    key="remove_allergens_multiselect",
+                    label_visibility="collapsed",
+                )
+                if st.button(
+                    "Remove Selected",
+                    key="remove_allergens_btn",
+                    use_container_width=True,
+                    disabled=not to_remove,
+                ):
                     try:
                         delete_allergens(to_remove)
-                        st.session_state.current_allergens = [x for x in st.session_state.current_allergens if x not in to_remove]
+                        st.session_state.current_allergens = [
+                            x for x in st.session_state.current_allergens if x not in to_remove
+                        ]
                         st.session_state.active_dialog = "user_profile"
                         st.rerun()
                     except APIError as err:
@@ -315,7 +343,9 @@ def profile_dialog() -> None:
                         allergens = entry.get("allergens", [])
                         if allergens:
                             has_any = True
-                            member_name = member_map.get(entry.get("user_id"), f"User {entry.get('user_id')}")
+                            member_name = member_map.get(
+                                entry.get("user_id"), f"User {entry.get('user_id')}"
+                            )
                             st.write(f"**{member_name.title()}**")
                             render_allergen_badges(allergens)
                     if not has_any:
@@ -371,7 +401,13 @@ def manage_fridge_dialog() -> None:
         role_order = {"owner": 0, "co_owner": 1, "child": 2}
         current_email = user.get("email", "").lower()
 
-        sorted_members = sorted(members, key=lambda m: (role_order.get(m.get("role"), 999), (m.get("name") or m.get("email") or "—").lower()))
+        sorted_members = sorted(
+            members,
+            key=lambda m: (
+                role_order.get(m.get("role"), 999),
+                (m.get("name") or m.get("email") or "—").lower(),
+            ),
+        )
 
         for m in sorted_members:
             member_id = m.get("id")
@@ -393,7 +429,12 @@ def manage_fridge_dialog() -> None:
                 st.caption(f"_{role}_")
             with col3:
                 if can_remove:
-                    if st.button("remove", key=f"remove_member_{member_id}", use_container_width=True, type="secondary"):
+                    if st.button(
+                        "remove",
+                        key=f"remove_member_{member_id}",
+                        use_container_width=True,
+                        type="secondary",
+                    ):
                         try:
                             remove_household_member(household_id, member_id)
                             st.toast("Member removed")
@@ -425,7 +466,9 @@ def manage_fridge_dialog() -> None:
                     key="manage_invite_role",
                     help="Co-owners can manage the fridge. Children have read-only access.",
                 )
-                submitted = st.form_submit_button("Send invitation", use_container_width=True, type="primary")
+                submitted = st.form_submit_button(
+                    "Send invitation", use_container_width=True, type="primary"
+                )
 
             if submitted:
                 if not email or "@" not in email:
@@ -451,20 +494,33 @@ def manage_fridge_dialog() -> None:
                     with col2:
                         st.caption(f"_{role}_")
                     with col3:
-                        status_color = "green" if status == "Accepted" else "orange" if status == "Pending" else "red"
+                        status_color = (
+                            "green"
+                            if status == "Accepted"
+                            else "orange" if status == "Pending" else "red"
+                        )
                         st.caption(f":{status_color}[{status}]")
 
         st.divider()
 
         st.markdown("**Delete Fridge**")
-        st.warning("This action will permanently delete your fridge and all its contents. All members will be removed. This cannot be undone.")
+        st.warning(
+            "This action will permanently delete your fridge and all its contents. All members will be removed. This cannot be undone."
+        )
         col1, col2 = st.columns([1, 1])
         with col1:
-            if st.button("Cancel", type="secondary", use_container_width=True, key="delete_cancel_btn"):
+            if st.button(
+                "Cancel", type="secondary", use_container_width=True, key="delete_cancel_btn"
+            ):
                 _reset_dialog()
                 st.rerun()
         with col2:
-            if st.button("Delete fridge", type="primary", use_container_width=True, key="delete_fridge_confirm_btn"):
+            if st.button(
+                "Delete fridge",
+                type="primary",
+                use_container_width=True,
+                key="delete_fridge_confirm_btn",
+            ):
                 try:
                     delete_household(household_id)
                     st.success("Fridge deleted.")
