@@ -7,6 +7,7 @@ import streamlit as st
 from config.settings import CATEGORY_OPTIONS
 from PIL import Image
 from services.barcode import add_item_from_barcode, detect_barcodes_in_image, lookup_barcode_product
+from state.session import mark_inventory_dirty
 
 
 def process_uploaded_image(uploaded_file) -> Optional[str]:
@@ -20,8 +21,8 @@ def process_uploaded_image(uploaded_file) -> Optional[str]:
         if detected:
             return detected[0]  # Return first barcode found
         return None
-    except Exception as e:
-        st.error(f"Error processing image: {e}")
+    except (OSError, ValueError, TypeError, cv2.error) as err:
+        st.error(f"Error processing image: {err}")
         return None
 
 
@@ -161,8 +162,9 @@ def handle_barcode_scan() -> None:
             if result:
                 st.success(result.get("message", "✓ Item added to inventory!"))
                 clear_detected()
-                st.session_state.inventory_dirty = True
-                st.rerun()
+                mark_inventory_dirty(rerun=True)
+            else:
+                st.error("Failed to add item from barcode. Please try again.")
 
         if st.button("Clear current scan", type="secondary"):
             clear_detected()

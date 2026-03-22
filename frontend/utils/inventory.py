@@ -72,7 +72,6 @@ CATEGORY_EXPIRY_DAYS = {
     "meat": 7,
 }
 
-# some common foods we might encounter in photo labels
 FOOD_TO_CATEGORY = {
     "milk": "dairy",
     "cheese": "dairy",
@@ -94,17 +93,9 @@ def show_expiry_notifications(items: List[Dict[str, Any]]) -> None:
     expiring_items = summary["expiring_items"]
     overdue = summary["overdue"]
 
-    # Sidebar banner — visible on every page
-    with st.sidebar:
-        if overdue:
-            st.error(f"🚨 {overdue} item(s) have already expired!")
-        if expiring_items:
-            st.warning(f"⚠️ {len(expiring_items)} item(s) expiring within {EXPIRY_ALERT_DAYS} days")
-
-    # Toasts — shown once per login session
     if not st.session_state.get("expiry_toasts_shown"):
         if overdue:
-            st.toast(f"🚨 {overdue} item(s) have already expired!", icon="🚨")
+            st.toast(f"{overdue} item(s) have already expired!")
         for item in expiring_items:
             days_left = (item["expiry"] - date.today()).days
             if days_left == 0:
@@ -113,7 +104,7 @@ def show_expiry_notifications(items: List[Dict[str, Any]]) -> None:
                 label = "tomorrow"
             else:
                 label = f"in {days_left} days"
-            st.toast(f"⚠️ {item['name']} expires {label}", icon="⚠️")
+            st.toast(f"{item['name']} expires {label}", icon="⚠️")
         st.session_state.expiry_toasts_shown = True
 
 

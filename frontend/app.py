@@ -24,7 +24,8 @@ load_dotenv(env_path)
 def main() -> None:
     if "page" not in st.session_state:
         st.session_state.page = "dashboard"
-    st.session_state.active_dialog = None
+    if "active_dialog" not in st.session_state:
+        st.session_state.active_dialog = None
 
     st.set_page_config(page_title="Smart Pantry Dashboard", page_icon="🥕", layout="wide")
     st.markdown(CUSTOM_STYLE, unsafe_allow_html=True)
@@ -38,7 +39,6 @@ def main() -> None:
             show_expiry_notifications(st.session_state.inventory)
 
             if st.session_state.page == "dashboard":
-                st.session_state.category_filter = "All"
                 render_dashboard()
             elif st.session_state.page == "recipe":
                 handle_generate_recipe()

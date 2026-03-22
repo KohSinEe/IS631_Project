@@ -2,7 +2,7 @@
 
 from typing import List
 
-from services.client import api_request
+from services.client import APIError, api_request
 
 
 def fetch_household_members(household_id: int) -> List[dict]:
@@ -21,11 +21,16 @@ def fetch_my_invitations() -> List[dict]:
     """List pending invitations for the current user (by email, case-insensitive on backend)."""
     try:
         out = api_request("get", "/invitations/me")
-    except Exception:
+    except APIError:
         return []
     if not isinstance(out, list):
         return []
     return [x for x in out if isinstance(x, dict)]
+
+
+def remove_household_member(household_id: int, member_id: int) -> None:
+    """Remove a member from the fridge (owner only)."""
+    api_request("delete", f"/households/{household_id}/members/{member_id}")
 
 
 def create_invite(household_id: int, email: str, role: str) -> dict:

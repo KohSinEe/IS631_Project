@@ -9,6 +9,7 @@ from services.inventory import (
     create_inventory_item,
     delete_inventory_item,
 )
+from state.session import mark_inventory_dirty
 
 
 def handle_add_item() -> None:
@@ -47,8 +48,7 @@ def handle_add_item() -> None:
         try:
             create_inventory_item(data)
             st.success("Item added")
-            st.session_state.inventory_dirty = True
-            st.rerun()
+            mark_inventory_dirty(rerun=True)
         except APIError as err:
             st.error(err.message)
 
@@ -75,8 +75,7 @@ def handle_quick_actions(items: List[Dict[str, Any]]) -> None:
         try:
             adjust_inventory_quantity(option_map[selected], int(change))
             st.success("Quantity updated")
-            st.session_state.inventory_dirty = True
-            st.rerun()
+            mark_inventory_dirty(rerun=True)
         except APIError as err:
             st.error(err.message)
 
@@ -91,7 +90,6 @@ def handle_quick_actions(items: List[Dict[str, Any]]) -> None:
             try:
                 delete_inventory_item(option_map[target])
                 st.success("Item deleted")
-                st.session_state.inventory_dirty = True
-                st.rerun()
+                mark_inventory_dirty(rerun=True)
             except APIError as err:
                 st.error(err.message)

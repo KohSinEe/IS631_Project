@@ -6,6 +6,7 @@ import streamlit as st
 from config.settings import CATEGORY_OPTIONS
 from services.client import APIError
 from services.inventory import update_inventory_item
+from state.session import mark_inventory_dirty
 from utils.inventory import ensure_inventory_loaded
 
 
@@ -122,5 +123,4 @@ def render_stocktake() -> None:
 
         if saved:
             st.success(f"{saved} item(s) updated successfully.")
-            st.session_state.inventory_dirty = True
-            st.rerun()
+            mark_inventory_dirty(rerun=True)

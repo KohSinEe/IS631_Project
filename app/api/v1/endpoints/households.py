@@ -198,6 +198,47 @@ def list_household_members(
     return result
 
 
+@router.delete("/{household_id}/members/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_household_member(
+    household_id: int,
+    member_id: int,
+    current_user: CurrentUserDep,
+    db: DatabaseDep,
+):
+    """Remove a member from the fridge. Only the household owner can remove members."""
+    if current_user.household_id != household_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this household",
+        )
+    if not current_user.is_household_owner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the fridge owner can remove members",
+        )
+    household = db.query(Household).filter(Household.id == household_id).first()
+    if not household:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Household not found",
+        )
+    if household.owner_id == member_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot remove the fridge owner",
+        )
+    member = db.query(User).filter(User.id == member_id, User.household_id == household_id).first()
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Member not found in this household",
+        )
+    member.household_id = None
+    member.household_role = None
+    db.commit()
+    return None
+
+
 @router.post("", response_model=HouseholdResponse, status_code=status.HTTP_201_CREATED)
 def create_household(
     body: HouseholdCreate,

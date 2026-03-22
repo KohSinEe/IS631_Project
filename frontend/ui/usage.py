@@ -4,6 +4,7 @@ from datetime import date, timedelta
 from typing import Any, Dict, List
 
 import streamlit as st
+from config.settings import USAGE_DEFAULT_DAYS
 from services.client import APIError
 from services.usage import fetch_usage_summary
 
@@ -28,7 +29,7 @@ def render_usage_overview() -> None:
 
     # Date range picker — default: last 30 days
     today = date.today()
-    default_from = today - timedelta(days=30)
+    default_from = today - timedelta(days=USAGE_DEFAULT_DAYS)
 
     col1, col2 = st.columns(2)
     with col1:
