@@ -54,13 +54,13 @@ def render_usage_overview() -> None:
     st.divider()
 
     # Summary metrics
-    total_consumed = sum(entry["total_consumed"] for entry in logs)
+    items_consumed = len(logs)
     top_item = most_used[0]["item_name"] if most_used else "—"
     bottom_item = least_used[0]["item_name"] if least_used else "—"
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("Total Consumed", total_consumed)
+        st.metric("Items Consumed", items_consumed)
     with col2:
         st.metric("Most Used", top_item)
     with col3:
