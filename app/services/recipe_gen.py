@@ -64,39 +64,32 @@ def _build_prompt(
     allergen_text = f"\nAllergens to avoid: {', '.join(allergens)}\n" if allergens else ""
 
     rules = [
-        "- Return ONLY valid JSON. No markdown. No backticks. No commentary.",
-        "- Output must match the schema shown.",
-        f"- Provide {max_recipes} recipes.",
-        "- Maximise the use of ingredients available in the fridge. These should appear under 'ingredients'.",
-        "- Use only whole-number quantities in 'ingredients'. Do not use decimals like 11.0.",
-        "- Format every ingredient as '<whole number> <ingredient name>' or '<whole number> <unit> <ingredient name>'.",
-        "- Do not use vague phrases like 'to taste', 'some', or fractions like '1/2'.",
-        f"- Allowed measurement units are ONLY: {', '.join(ALLOWED_UNITS)}.",
-        "- Do not use any other units such as cups, tbsp, tsp, cloves, slices, or pinches.",
-        "- If an ingredient does not require measurement, use 'pieces'.",
-        "- Ingredient names must match pantry items closely. Do not add preparation words like chopped, diced, scrambled, minced, or sliced.",
+        "Return ONLY valid JSON. No markdown or explanation.",
+        f"Provide {max_recipes} recipes.",
+        "Use only whole-number quantities in 'ingredients'.",
+        "Format ingredients as '<whole number> <ingredient name>' or '<whole number> <unit> <ingredient name>'.",
+        f"Allowed units are ONLY: {', '.join(ALLOWED_UNITS)}.",
+        "Do not use vague terms like 'to taste' or fractions.",
+        "Ingredient names should match pantry items closely.",
     ]
     if inventory_only:
         rules += [
-            "- Only suggest recipes that can be made entirely from the fridge ingredients listed.",
-            "- 'missing_ingredients' must always be an empty list.",
-            "- Do not suggest a recipe if it requires any ingredient not in the fridge.",
+            "Use ONLY the provided pantry items.",
+            "Missing_ingredients must be an empty list.",
         ]
     else:
         rules += [
-            "- If a recipe absolutely requires an ingredient not in the fridge, list it under 'missing_ingredients'. Keep missing ingredients to a minimum.",
-            "- 'ingredients' should only contain items from the fridge used in the recipe.",
-            "- 'missing_ingredients' should only contain essential items not in the fridge.",
+            "Minimize missing_ingredients.",
+            "Only include essential missing items.",
         ]
     if allergens:
         rules += [
-            f"- CRITICAL: The following ingredients are allergens and are STRICTLY FORBIDDEN: {', '.join(allergens)}.",
-            f"- Do NOT include {', '.join(allergens)} in ANY part of the recipe — not in ingredients, missing_ingredients, steps, or title.",
+            f"Do NOT include allergens: {', '.join(allergens)} in any part of the recipe.",
             f"- If a recipe would normally use {', '.join(allergens)}, find a safe substitute or skip that recipe entirely.",
-            "- This is a food safety requirement. Ignoring allergens could harm people.",
+            "This is a food safety requirement. Ignoring allergens could harm people.",
         ]
 
-    schema = {
+    schema_hint = {
         "recipes": [
             {
                 "title": "string",
@@ -108,31 +101,14 @@ def _build_prompt(
             }
         ]
     }
-
-    example_output = {
-        "recipes": [
-            {
-                "title": "Simple Egg Dish",
-                "time_minutes": 10,
-                "ingredients": ["2 pieces egg", "50 g rice"],
-                "missing_ingredients": [],
-                "steps": ["Beat the eggs.", "Cook them in a pan."],
-                "reason": "Uses available pantry items.",
-            }
-        ]
-    }
-
     return (
-        "You are a helpful cooking assistant.\n"
-        "Given the following pantry items, generate practical home-cooking recipes.\n"
-        f"Pantry items: {pantry_lines}\n"
+        "You are a cooking assistant.\n"
+        f"Pantry: {pantry_lines}\n"
         f"{allergen_text}"
         f"{prefs_text}\n"
-        "JSON schema (example shape):\n"
-        f"{json.dumps(schema, indent=2)}\n\n"
-        "Example valid output:\n"
-        f"{json.dumps(example_output, indent=2)}\n\n"
-        "Rules:\n" + "\n".join(rules) + "\n\nReturn JSON only."
+        "Output format:\n"
+        f"{schema_hint}\n\n"
+        "Rules:\n- " + "\n- ".join(rules)
     )
 
 
