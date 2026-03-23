@@ -7,7 +7,9 @@ from fastapi import APIRouter, HTTPException, status
 from app.dependencies import DatabaseDep, CurrentUserDep
 from app.models.household import Household
 from app.models.invitation import Invitation
+from app.models.item import Item
 from app.models.enums import InvitationStatusEnum
+from app.models.usage_log import ItemUsageLog
 from app.models.user import User
 from app.schemas.invitation import InviteCreate, InvitationResponse, HouseholdMemberResponse
 from app.schemas.household import HouseholdCreate, HouseholdResponse
@@ -45,11 +47,21 @@ def delete_household(
             detail="Household not found",
         )
 
-    # Unlink all users from this household so FK allows delete
-    db.query(User).filter(User.household_id == household_id).update(
-        {User.household_id: None, User.household_role: None}
+    # Invitations reference households.id without DB-level CASCADE — must remove first
+    db.query(Invitation).filter(Invitation.household_id == household_id).delete(
+        synchronize_session=False
     )
-    # Delete household (items are cascade-deleted)
+    db.query(ItemUsageLog).filter(ItemUsageLog.household_id == household_id).delete(
+        synchronize_session=False
+    )
+    db.query(Item).filter(Item.household_id == household_id).delete(synchronize_session=False)
+
+    # Unlink members via ORM so session matches DB (bulk UPDATE can leave stale household_id
+    # on the current user and cause integrity errors on commit).
+    for member in db.query(User).filter(User.household_id == household_id).all():
+        member.household_id = None
+        member.household_role = None
+
     db.delete(household)
     db.commit()
 
