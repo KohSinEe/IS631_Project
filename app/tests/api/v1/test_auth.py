@@ -4,7 +4,6 @@ from app.config import settings
 from fastapi.testclient import TestClient
 from app.models import User
 
-
 # ----- Register -----
 
 
@@ -14,8 +13,10 @@ def test_register_success(client: TestClient, db) -> None:
         f"{settings.API_V1_STR}/auth/register",
         json={
             "email": "newuser@example.com",
-            "password": "securepass123",
+            "password": "Secure_12",
+            "password_confirm": "Secure_12",
             "name": "New User",
+            "household_name": "New User Household",
         },
     )
     assert r.status_code == 201
@@ -23,23 +24,26 @@ def test_register_success(client: TestClient, db) -> None:
     assert data["email"] == "newuser@example.com"
     assert data["name"] == "New User"
     assert data["is_active"] is True
+    assert data["household_id"] is not None
     assert "hashed_password" not in data
     assert "password" not in data
 
 
-def test_register_with_household(client: TestClient, db) -> None:
-    """Registration can create a new household."""
+def test_register_without_household_success(client: TestClient, db) -> None:
+    """New user can register without providing a household name."""
     r = client.post(
         f"{settings.API_V1_STR}/auth/register",
         json={
-            "email": "household@example.com",
-            "password": "password123",
-            "household_name": "My Household",
+            "email": "nohouse@example.com",
+            "password": "Secure_12",
+            "password_confirm": "Secure_12",
+            "name": "No House",
         },
     )
     assert r.status_code == 201
     data = r.json()
-    assert data["household_id"] is not None
+    assert data["email"] == "nohouse@example.com"
+    assert data["household_id"] is None
 
 
 def test_register_duplicate_email(client: TestClient, create_test_user: User) -> None:
@@ -48,8 +52,10 @@ def test_register_duplicate_email(client: TestClient, create_test_user: User) ->
         f"{settings.API_V1_STR}/auth/register",
         json={
             "email": "test@example.com",
-            "password": "anotherpass123",
+            "password": "Another_1",
+            "password_confirm": "Another_1",
             "name": "Duplicate",
+            "household_name": "Dup Household",
         },
     )
     assert r.status_code == 400

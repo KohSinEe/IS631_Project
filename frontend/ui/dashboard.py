@@ -1,81 +1,52 @@
-import streamlit as st
-from typing import Any, Dict, List
 from datetime import date, timedelta
+from typing import Any, Dict, List
 
-from config.settings import EXPIRY_ALERT_DAYS, CATEGORY_OPTIONS, UNIT_OPTIONS
+import streamlit as st
+from config.settings import (
+    CATEGORY_OPTIONS,
+    EXPIRY_ALERT_DAYS,
+)
+from services.client import APIError
+from services.invitations import (
+    accept_invitation,
+    decline_invitation,
+    fetch_my_invitations,
+)
+from services.user import (
+    get_current_user,
+)
+from state.session import mark_inventory_dirty, reset_active_dialog
+from ui.dialogs import (
+    add_item_dialog,
+    edit_item_dialog,
+    invitation_notification_dialog,
+    logout_dialog,
+    manage_fridge_dialog,
+    profile_dialog,
+)
 from utils.inventory import (
-    parse_expiry,
-    summarize_inventory,
     ensure_inventory_loaded,
     filter_inventory,
+    parse_expiry,
+    summarize_inventory,
 )
-from services.user import logout_user, update_user
-from services.client import APIError
-from services.inventory import create_inventory_item
-from ui.actions import handle_quick_actions
-from ui.barcode import handle_barcode_scan
-from ui.recipe import handle_generate_recipe
-
-
-@st.dialog("Profile")
-def profile_dialog() -> None:
-    user = st.session_state.user or {}
-
-    with st.form("update_profile_form"):
-        name = st.text_input(
-            "Username",
-            value=user.get("name") or "",
-            placeholder="Enter your display name",
-        )
-        _ = st.text_input(
-            "Email",
-            value=user.get("email") or "",
-            disabled=True,
-        )
-
-        save = st.form_submit_button("Save", use_container_width=True)
-
-    if save:
-        if not name.strip():
-            st.error("Name cannot be empty")
-        else:
-            try:
-                update_user(name)
-                st.success("Profile updated successfully")
-            except Exception as e:
-                st.error("Failed to update profile. Please try again")
-                st.error(e)
-
-
-@st.dialog("Logout")
-def logout_dialog() -> None:
-    col1, col2 = st.columns([1, 1])
-
-    with col1:
-        if st.button("Yes", use_container_width=True):
-            logout_user()
-            st.session_state.show_logout_dialog = False
-            st.rerun()
-    with col2:
-        if st.button("No", type="secondary", use_container_width=True):
-            st.session_state.show_logout_dialog = False
-            st.rerun()
+from utils.presentation import format_role, get_error_message, safe_html_text, user_display_name
 
 
 def render_header() -> None:
     user = st.session_state.user or {}
-    if "show_profile_dialog" not in st.session_state:
-        st.session_state.show_profile_dialog = False
-    if "show_logout_dialog" not in st.session_state:
-        st.session_state.show_logout_dialog = False
+    household_id = user.get("household_id")
 
-    header_left, header_right = st.columns([10, 1])
+    header_left, header_right = st.columns([8, 2])
 
     with header_left:
+        name = safe_html_text(user_display_name(user))
         st.markdown(
             f"""
-            <h1>Welcome back, {user.get('name') or user.get('email')}</h1>
-            <h3>Your fridge at a glance...</h3>
+            <div class="dashboard-welcome">
+            <h1>Welcome back, {name}</h1>
+            <h3>Your fridge at a glance</h3>
+            </div>
             """,
             unsafe_allow_html=True,
         )
@@ -84,14 +55,26 @@ def render_header() -> None:
         st.markdown("<div style='margin-top: 1.5rem'></div>", unsafe_allow_html=True)
 
         with st.popover("Account"):
-            if st.button("Profile", use_container_width=True):
-                st.session_state.show_profile_dialog = True
-                if st.session_state.show_profile_dialog:
-                    profile_dialog()
-            if st.button("Sign out", type="secondary", use_container_width=True):
-                st.session_state.show_logout_dialog = True
-                if st.session_state.show_logout_dialog:
-                    logout_dialog()
+            if (
+                st.button("Profile", key="header_profile_btn", use_container_width=True)
+                or st.session_state.active_dialog == "user_profile"
+            ):
+                st.session_state.active_dialog = "user_profile"
+                profile_dialog()
+            if household_id and (
+                st.button("Manage Fridge", key="manage_fridge_button", use_container_width=True)
+                or st.session_state.active_dialog == "manage_fridge"
+            ):
+                st.session_state.active_dialog = "manage_fridge"
+                manage_fridge_dialog()
+            if (
+                st.button(
+                    "Sign out", key="header_signout_btn", type="secondary", use_container_width=True
+                )
+                or st.session_state.active_dialog == "logout"
+            ):
+                st.session_state.active_dialog = "logout"
+                logout_dialog()
 
 
 def render_metric(
@@ -164,81 +147,119 @@ def render_inventory_table(
         st.info("No items to display yet.")
         return working
 
-    st.markdown("### Inventory overview")
-    st.dataframe(rows, use_container_width=True, hide_index=True)
+    st.markdown("### Inventory Overview")
+    st.dataframe(rows, width="stretch", hide_index=True)
     return working
 
 
-def handle_add_item() -> None:
-    with st.form("add_item_form"):
-        st.subheader("Add to pantry")
-        name = st.text_input("Item", key="create_name")
-        quantity = st.number_input("Quantity", min_value=0, step=1, value=1, key="create_quantity")
-        unit = st.selectbox("Unit", options=UNIT_OPTIONS, key="create_unit")
-        expiry = st.date_input(
-            "Expiry Date", min_value=date.today(), format="DD/MM/YYYY", key="create_expiry"
-        )
-        category = st.selectbox("Category", options=CATEGORY_OPTIONS, key="create_category")
-        submitted = st.form_submit_button("Save item")
-
-    if submitted:
-        if not name:
-            st.error("Item name is required")
-            return
-        data = {
-            "name": name,
-            "quantity": int(quantity),
-            "unit": unit,
-            "expiry_date": expiry.isoformat(),
-            "category": category,
-        }
-        try:
-            create_inventory_item(data)
-            st.success("Item added")
-            st.session_state.inventory_dirty = True
-            st.rerun()
-        except APIError as err:
-            st.error(err.message)
-
-
-@st.dialog("AddItem")
-def add_item_dialog() -> None:
-    tab1, tab2 = st.tabs(["Manual Entry", "Barcode Scan"])
-
-    with tab1:
-        handle_add_item()
-    with tab2:
-        handle_barcode_scan()
-
-
-@st.dialog("EditItem")
-def edit_item_dialog(sorted_items) -> None:
-    handle_quick_actions(sorted_items)
-
-
 def render_dashboard() -> None:
-    if "show_add_item_dialog" not in st.session_state:
-        st.session_state.show_add_item_dialog = False
-    if "show_edit_item_dialog" not in st.session_state:
-        st.session_state.show_edit_item_dialog = False
+    user = st.session_state.get("user") or {}
+
+    ensure_inventory_loaded()
 
     render_header()
+
+    if "flash_success" in st.session_state:
+        st.success(st.session_state.flash_success)
+        del st.session_state.flash_success
+
+    # Pending invitations: fetch early so we can open at most one dialog per run
+    try:
+        raw = fetch_my_invitations()
+        pending = [x for x in (raw or []) if isinstance(x, dict)]
+    except APIError:
+        pending = []
+    if not pending:
+        st.session_state.invitation_popup_dismissed = False  # Reset so next invite shows popup
+    if "invitation_popup_dismissed" not in st.session_state:
+        st.session_state.invitation_popup_dismissed = False
+
+    if pending and not st.session_state.invitation_popup_dismissed:
+        invitation_notification_dialog(pending)
+
+    if pending:
+        st.markdown("### Pending invitations")
+        for inv in pending:
+            role_label = format_role(inv.get("role"))
+            inviter = inv.get("inviter_name") or "Someone"
+            inv_id = inv.get("id")
+            if inv_id is None:
+                continue
+            st.write(
+                f"**{inv.get('household_name', 'Fridge')}** — {inviter} invited you as **{role_label}**."
+            )
+            col1, col2, _ = st.columns([1, 1, 4])
+            with col1:
+                if st.button("Accept", key=f"accept_inv_{inv_id}"):
+                    reset_active_dialog()  # Avoid opening "Invite to fridge" after accept
+                    try:
+                        accept_invitation(inv_id)
+                        get_current_user()
+                        st.success("You joined the fridge!")
+                        mark_inventory_dirty(rerun=True)
+                    except APIError as e:
+                        st.error(get_error_message(e))
+            with col2:
+                if st.button("Decline", key=f"decline_inv_{inv_id}", type="secondary"):
+                    try:
+                        decline_invitation(inv_id)
+                        st.rerun()
+                    except APIError as e:
+                        st.error(get_error_message(e))
+        st.divider()
+
     action_cols = st.columns([1, 1, 1])
     render_metric("Items tracked", len(st.session_state.inventory), action_cols[0], "green")
     summary = summarize_inventory(st.session_state.inventory)
     render_metric("Expiring soon", summary["expiring"], action_cols[1], "orange")
     render_metric("Expired", summary["overdue"], action_cols[2], "red")
 
-    household_id = st.session_state.household_id
-    if not household_id:
-        st.info(
-            "You do not belong to a household yet. Ask an admin to assign you before managing items."
-        )
-        return
+    st.space()
+
+    nav_col1, nav_col2 = st.columns(2)
+    with nav_col1:
+        if st.button("Stocktake", use_container_width=True):
+            reset_active_dialog()
+            st.session_state.page = "stocktake"
+            st.rerun()
+    with nav_col2:
+        if st.button("Usage Overview", use_container_width=True):
+            reset_active_dialog()
+            st.session_state.page = "usage"
+            st.rerun()
 
     st.divider()
 
-    add_item_col, edit_item_col = st.columns([1, 1])
+    household_id = st.session_state.household_id
+    if not household_id:
+        if not pending:
+            st.info(
+                "You do not belong to a fridge yet. Get invited by an owner, or create an account with a household name."
+            )
+        ensure_inventory_loaded()
+        return
+
+    if user.get("household_role") != "child":
+        add_item_col, edit_item_col = st.columns([1, 1])
+
+        with add_item_col:
+            if st.button("Add Item", use_container_width=True):
+                st.session_state.active_dialog = "add_item"
+                add_item_dialog()
+        with edit_item_col:
+            if (
+                st.button("Edit Items", use_container_width=True)
+                or st.session_state.active_dialog == "edit_item"
+            ):
+                st.session_state.active_dialog = "edit_item"
+                edit_item_dialog(st.session_state.filtered_inventory)
+    else:
+        if (
+            st.button("Edit Items", use_container_width=True)
+            or st.session_state.active_dialog == "edit_item"
+        ):
+            st.session_state.active_dialog = "edit_item"
+            edit_item_dialog(st.session_state.filtered_inventory)
 
     if "category_filter" not in st.session_state:
         st.session_state.category_filter = "All"
@@ -254,16 +275,29 @@ def render_dashboard() -> None:
         st.session_state.filtered_inventory, st.session_state.sort_by_expiry
     )
 
-    with add_item_col:
-        if st.button("Add Item", use_container_width=True):
-            st.session_state.show_add_item_dialog = True
-            if st.session_state.show_add_item_dialog:
-                add_item_dialog()
-    with edit_item_col:
-        if st.button("Edit Items", use_container_width=True):
-            st.session_state.show_edit_item_dialog = True
-            if st.session_state.show_edit_item_dialog:
-                edit_item_dialog(st.session_state.filtered_inventory)
+    st.divider()
+
+    st.markdown("### Help Me Generate A Recipe")
+
+    inventory_only = not st.toggle(
+        "Consider ingredients outside my fridge",
+        value=False,
+        key="inventory_only_toggle",
+        help="When on, the AI may suggest recipes that need extra ingredients not in your fridge.",
+    )
+    st.session_state.inventory_only = inventory_only
+
+    if user.get("household_id"):
+        cooking_for = st.radio(
+            "Who are you cooking for?",
+            options=["myself", "household"],
+            format_func=lambda x: "Myself" if x == "myself" else "My Household",
+            horizontal=True,
+            key="cooking_for_radio",
+        )
+        st.session_state.use_household_allergens = cooking_for == "household"
+    else:
+        st.session_state.use_household_allergens = False
 
     if st.button("✨ Generate Recipe ✨", use_container_width=True):
         st.session_state.page = "recipe"

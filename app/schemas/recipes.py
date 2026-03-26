@@ -1,10 +1,12 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 
+
 class PantryItem(BaseModel):
     name: str
     quantity: Optional[float] = None
     unit: Optional[str] = None
+
 
 class Recipe(BaseModel):
     title: str
@@ -14,11 +16,21 @@ class Recipe(BaseModel):
     steps: List[str]
     reason: Optional[str] = None
 
+
 class RecipeGenerateRequest(BaseModel):
     items: List[PantryItem]
     inventory_only: bool = True
     max_recipes: int = 3
     preferences: Optional[Dict[str, Any]] = None
+    use_household_allergens: bool = True  # False = only my own allergens
+
 
 class RecipeGenerateResponse(BaseModel):
     recipes: List[Recipe]
+
+
+class CookRecipeRequest(BaseModel):
+    title: str
+    ingredients: List[str]
+    missing_ingredients: List[str] = []
+    steps: List[str]

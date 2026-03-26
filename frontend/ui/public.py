@@ -1,43 +1,10 @@
 import streamlit as st
-from services.user import login_user, register_user
-from services.client import APIError
-
-
-@st.dialog("Sign In")
-def sign_in_dialog() -> None:
-    with st.form("signin_form"):
-        email = st.text_input("Email", key="login_email")
-        password = st.text_input("Password", type="password", key="login_password")
-        submitted = st.form_submit_button("Sign in")
-    if submitted:
-        if not email or not password:
-            st.error("Email and password are required")
-        else:
-            try:
-                login_user(email, password)
-                st.toast("Signed in")
-                st.rerun()
-            except APIError as err:
-                st.error(err.message)
-
-
-@st.dialog("Sign Up")
-def sign_up_dialog() -> None:
-    with st.form("signup_form"):
-        reg_email = st.text_input("Email", key="register_email")
-        reg_password = st.text_input("Password", type="password", key="register_password")
-        reg_name = st.text_input("Display name", key="register_name")
-        reg_household = st.text_input("Household name (optional)", key="register_household")
-        submitted = st.form_submit_button("Create account")
-    if submitted:
-        if not reg_email or not reg_password:
-            st.error("Email and password are required")
-        else:
-            try:
-                register_user(reg_email, reg_password, reg_name, reg_household)
-                st.success("Account created. Please sign in.")
-            except APIError as err:
-                st.error(err.message)
+from ui.dialogs import (
+    reset_password_dialog,
+    sign_in_dialog,
+    sign_up_dialog,
+    sign_up_verification_form,
+)
 
 
 def render_public_view() -> None:
@@ -46,23 +13,37 @@ def render_public_view() -> None:
     if "sign_in_form_data" not in st.session_state:
         st.session_state.sign_in_form_data = {"email": "", "password": ""}
 
-    st.markdown("<h1 style='text-align: center;'>FridgeBuddy</h1>", unsafe_allow_html=True)
+    # Show verification dialog immediately after signup
+    if st.session_state.get("show_sign_up_verification"):
+        sign_up_verification_form()
+        return
+
     st.markdown(
-        "<h4 style='text-align: center;'>Stop guessing. Start managing.</h4>",
+        "<div class='landing-hero'>"
+        "<h1>🥕 FridgeBuddy</h1>"
+        "<p class='landing-tagline'>Stop guessing. Start managing.</p>"
+        "</div>",
         unsafe_allow_html=True,
     )
-
     st.markdown("<br>", unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([2, 3, 2])
     with col2:
-        if st.button("Sign In", key="landing_signin", use_container_width=True):
-            st.session_state.show_sign_in_form = True
-            if st.session_state.show_sign_in_form:
-                sign_in_dialog()
-            else:
-                st.session_state.sign_in_form_data = {"email": "", "password": ""}
-        if st.button("Sign Up", key="landing_signup", use_container_width=True):
-            st.session_state.show_sign_up_form = True
-            if st.session_state.show_sign_up_form:
-                sign_up_dialog()
+        if (
+            st.button("Sign In", key="landing_signin", use_container_width=True)
+            or st.session_state.active_dialog == "sign_in"
+        ):
+            st.session_state.active_dialog = "sign_in"
+            sign_in_dialog()
+        if (
+            st.button("Sign Up", key="landing_signup", use_container_width=True)
+            or st.session_state.active_dialog == "sign_up"
+        ):
+            st.session_state.active_dialog = "sign_up"
+            sign_up_dialog()
+        if (
+            st.button("Forgot Password?", key="landing_forgotpw", use_container_width=True)
+            or st.session_state.active_dialog == "forget_pw"
+        ):
+            st.session_state.active_dialog = "forget_pw"
+            reset_password_dialog()

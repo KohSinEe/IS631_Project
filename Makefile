@@ -3,13 +3,15 @@
 help:
 	@echo "Food Management App - Available Commands"
 	@echo "=========================================="
-	@echo "  make install     - Install dependencies with UV"
-	@echo "  make setup       - Complete initial setup"
-	@echo "  make run         - Run development server"
-	@echo "  make migrate     - Run database migrations"
-	@echo "  make create-user - Create first user"
-	@echo "  make format      - Format code"
-	@echo "  make clean       - Clean build artifacts"
+	@echo "  make install       - Install dependencies with UV"
+	@echo "  make setup         - Complete initial setup"
+	@echo "  make run           - Run FastAPI server"
+	@echo "  make run-streamlit - Run Streamlit UI"
+	@echo "  make run-all       - Run FastAPI and Streamlit together"
+	@echo "  make migrate       - Run database migrations"
+	@echo "  make create-user   - Create first user"
+	@echo "  make format        - Format code"
+	@echo "  make clean         - Clean build artifacts"
 
 install:
 	@echo "Installing dependencies..."
@@ -35,8 +37,17 @@ setup: install
 	@echo "  2. Run: make create-user"
 	@echo "  3. Run: make run"
 
+
 run:
 	@uv run uvicorn app.main:app --reload --port 8000
+
+run-streamlit:
+	@uv run streamlit run frontend/app.py
+
+run-all:
+	@echo "Starting FastAPI and Streamlit..."
+	(uv run uvicorn app.main:app --reload --port 8000 &)
+	(uv run streamlit run frontend/app.py)
 
 migrate:
 	@uv run alembic upgrade head
@@ -52,9 +63,6 @@ format:
 	@uv run black app/
 	@uv run isort app/
 
-st:
-	@uv run streamlit run frontend/app.py
-  
 test:
 	@uv run pytest --cov=app/api --cov-report=term
 
@@ -66,3 +74,7 @@ clean:
 	@rm -rf .pytest_cache dist build *.egg-info uv.lock
 	@echo "✅ Cleanup complete"
 
+stop:
+	pkill -f "uvicorn app.main:app" || true
+	pkill -f "streamlit run frontend/app.py" || true
+	@echo "Backend and Streamlit processes killed."
